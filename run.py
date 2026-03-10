@@ -1,5 +1,6 @@
 from app.ingestion.loader import load_all_raw_alerts
 from app.ingestion.validator import validate_raw_alert
+from app.normalization.mapper import normalize_alert
 
 RAW_ALERTS_DIR = "data/raw_alerts"
 
@@ -7,14 +8,25 @@ RAW_ALERTS_DIR = "data/raw_alerts"
 def main() -> None:
     alerts = load_all_raw_alerts(RAW_ALERTS_DIR)
 
-    print(f"Loaded {len(alerts)} raw alerts\n")
+    print(f"\nLoaded {len(alerts)} raw alerts\n")
 
     for alert in alerts:
+
         is_valid = validate_raw_alert(alert)
-        print(f"Alert ID: {alert.id}")
-        print(f"Message: {alert.message}")
-        print(f"Ground Truth: {alert.ground_truth_label}")
-        print(f"Valid: {is_valid}")
+
+        normalized = normalize_alert(alert)
+
+        print("RAW ALERT")
+        print("ID:", alert.id)
+        print("Message:", alert.message)
+
+        print("\nNORMALIZED ALERT")
+        print("Source IP:", normalized.source_ip)
+        print("Category:", normalized.category)
+        print("Signature:", normalized.signature)
+        print("MITRE IDs:", normalized.mitre_ids)
+
+        print("\nValid:", is_valid)
         print("-" * 50)
 
 
