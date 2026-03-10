@@ -1,0 +1,66 @@
+from sqlalchemy import Boolean, Column, Integer, String, Text
+
+from app.database import Base
+
+
+class RawAlertDB(Base):
+    __tablename__ = "raw_alerts"
+
+    id = Column(String, primary_key=True, index=True)
+    source = Column(String, nullable=False)
+    group_name = Column(String, nullable=False)
+    type = Column(String, nullable=False)
+    message = Column(String, nullable=False)
+    raw_payload_json = Column(Text, nullable=False)
+    ground_truth_label = Column(String, nullable=False)
+    created_at = Column(String, nullable=False)
+
+
+class NormalizedAlertDB(Base):
+    __tablename__ = "normalized_alerts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    raw_alert_id = Column(String, nullable=False, index=True)
+    event_type = Column(String, nullable=False)
+    source_ip = Column(String, nullable=True)
+    category = Column(String, nullable=False)
+    raw_severity = Column(Integer, nullable=False)
+    signature = Column(String, nullable=True)
+    mitre_ids_json = Column(Text, nullable=False)
+    normalized_payload_json = Column(Text, nullable=False)
+
+
+class ScoredAlertDB(Base):
+    __tablename__ = "scored_alerts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    raw_alert_id = Column(String, nullable=False, index=True)
+    risk_score = Column(Integer, nullable=False)
+    score_reasons_json = Column(Text, nullable=False)
+    recommended_action = Column(String, nullable=False)
+    action_taken = Column(String, nullable=False)
+    processed_at = Column(String, nullable=False)
+
+
+class EvaluationResultDB(Base):
+    __tablename__ = "evaluation_results"
+
+    id = Column(Integer, primary_key=True, index=True)
+    raw_alert_id = Column(String, nullable=False, index=True)
+    ground_truth_label = Column(String, nullable=False)
+    predicted_band = Column(String, nullable=False)
+    expected_band = Column(String, nullable=False)
+    is_correct_band = Column(Boolean, nullable=False)
+    predicted_action = Column(String, nullable=False)
+    expected_action = Column(String, nullable=False)
+    is_correct_action = Column(Boolean, nullable=False)
+
+
+class BlockedIPDB(Base):
+    __tablename__ = "blocked_ips"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ip_address = Column(String, nullable=False)
+    raw_alert_id = Column(String, nullable=False, index=True)
+    reason = Column(String, nullable=False)
+    is_simulated = Column(Boolean, nullable=False)
