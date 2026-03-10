@@ -1,3 +1,5 @@
+from app.evaluation.confusion_matrix import calculate_evaluation_summary
+from app.evaluation.evaluator import evaluate_alert
 from app.ingestion.loader import load_all_raw_alerts
 from app.ingestion.validator import validate_raw_alert
 from app.normalization.mapper import normalize_alert
@@ -10,6 +12,7 @@ RAW_ALERTS_DIR = "data/raw_alerts"
 
 def main() -> None:
     alerts = load_all_raw_alerts(RAW_ALERTS_DIR)
+    evaluation_results = []
 
     print(f"\nLoaded {len(alerts)} raw alerts\n")
 
@@ -18,6 +21,10 @@ def main() -> None:
         normalized = normalize_alert(alert)
         scored = score_alert(normalized)
         scored = respond_to_alert(normalized, scored)
+        evaluation = evaluate_alert(normalized, scored)
+
+        evaluation_results.append(evaluation)
+
         risk_band = get_risk_band(scored.risk_score)
 
         print("RAW ALERT")
@@ -39,8 +46,26 @@ def main() -> None:
         for reason in scored.score_reasons:
             print(f" - {reason}")
 
+        print("\nEVALUATION")
+        print("Ground Truth:", evaluation.ground_truth_label)
+        print("Expected Risk Band:", evaluation.expected_risk_band)
+        print("Predicted Risk Band:", evaluation.predicted_risk_band)
+        print("Band Correct:", evaluation.is_correct_band)
+        print("Expected Action:", evaluation.expected_action)
+        print("Predicted Action:", evaluation.predicted_action)
+        print("Action Correct:", evaluation.is_correct_action)
+
         print("\nValid:", is_valid)
         print("-" * 60)
+
+    summary = calculate_evaluation_summary(evaluation_results)
+
+    print("\nFINAL EVALUATION SUMMARY")
+    print("Total Alerts:", summary["total_alerts"])
+    print("Correct Band Predictions:", summary["correct_band_predictions"])
+    print("Correct Action Predictions:", summary["correct_action_predictions"])
+    print("Band Accuracy (%):", summary["band_accuracy"])
+    print("Action Accuracy (%):", summary["action_accuracy"])
 
 
 if __name__ == "__main__":
