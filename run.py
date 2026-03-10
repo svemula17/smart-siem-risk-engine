@@ -3,6 +3,10 @@ from app.evaluation.evaluator import evaluate_alert
 from app.ingestion.loader import load_all_raw_alerts
 from app.ingestion.validator import validate_raw_alert
 from app.normalization.mapper import normalize_alert
+from app.reporting.report_generator import (
+    generate_evaluation_summary_report,
+    generate_incident_report,
+)
 from app.response.responder import respond_to_alert
 from app.scoring.score_helpers import get_risk_band
 from app.scoring.scorer import score_alert
@@ -24,6 +28,13 @@ def main() -> None:
         evaluation = evaluate_alert(normalized, scored)
 
         evaluation_results.append(evaluation)
+
+        incident_report_path = generate_incident_report(
+            raw_alert=alert,
+            normalized_alert=normalized,
+            scored_alert=scored,
+            evaluation=evaluation,
+        )
 
         risk_band = get_risk_band(scored.risk_score)
 
@@ -55,10 +66,17 @@ def main() -> None:
         print("Predicted Action:", evaluation.predicted_action)
         print("Action Correct:", evaluation.is_correct_action)
 
+        print("\nREPORT")
+        print("Incident Report Generated:", incident_report_path)
+
         print("\nValid:", is_valid)
         print("-" * 60)
 
     summary = calculate_evaluation_summary(evaluation_results)
+    evaluation_report_path = generate_evaluation_summary_report(
+        results=evaluation_results,
+        summary=summary,
+    )
 
     print("\nFINAL EVALUATION SUMMARY")
     print("Total Alerts:", summary["total_alerts"])
@@ -66,6 +84,7 @@ def main() -> None:
     print("Correct Action Predictions:", summary["correct_action_predictions"])
     print("Band Accuracy (%):", summary["band_accuracy"])
     print("Action Accuracy (%):", summary["action_accuracy"])
+    print("Evaluation Summary Report Generated:", evaluation_report_path)
 
 
 if __name__ == "__main__":

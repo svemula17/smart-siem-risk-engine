@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Incident Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background-color: #f7f9fc;
+            color: #222;
+        }
+        h1, h2 {
+            color: #1f4e79;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            margin-bottom: 24px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .label {
+            font-weight: bold;
+        }
+        ul {
+            margin-top: 8px;
+        }
+        .score {
+            font-size: 22px;
+            font-weight: bold;
+            color: #b22222;
+        }
+    </style>
+</head>
+<body>
+    <h1>Incident Report</h1>
+
+    <div class="card">
+        <h2>Raw Alert</h2>
+        <p><span class="label">Alert ID:</span> {{ raw_alert.id }}</p>
+        <p><span class="label">Message:</span> {{ raw_alert.message }}</p>
+        <p><span class="label">Source:</span> {{ raw_alert.source }}</p>
+        <p><span class="label">Group:</span> {{ raw_alert.group }}</p>
+        <p><span class="label">Ground Truth:</span> {{ raw_alert.ground_truth_label }}</p>
+        <p><span class="label">Start Time:</span> {{ raw_alert.start_time }}</p>
+        <p><span class="label">End Time:</span> {{ raw_alert.end_time }}</p>
+    </div>
+
+    <div class="card">
+        <h2>Normalized Alert</h2>
+        <p><span class="label">Event Type:</span> {{ normalized_alert.event_type }}</p>
+        <p><span class="label">Source IP:</span> {{ normalized_alert.source_ip }}</p>
+        <p><span class="label">Host:</span> {{ normalized_alert.host }}</p>
+        <p><span class="label">Category:</span> {{ normalized_alert.category }}</p>
+        <p><span class="label">Signature:</span> {{ normalized_alert.signature }}</p>
+        <p><span class="label">MITRE IDs:</span> {{ normalized_alert.mitre_ids | join(", ") if normalized_alert.mitre_ids else "None" }}</p>
+        <p><span class="label">Threat Indicator Type:</span> {{ normalized_alert.threat_indicator_type }}</p>
+    </div>
+
+    <div class="card">
+        <h2>Scored Alert</h2>
+        <p class="score">Risk Score: {{ scored_alert.risk_score }}</p>
+        <p><span class="label">Recommended Action:</span> {{ scored_alert.recommended_action }}</p>
+        <p><span class="label">Action Taken:</span> {{ scored_alert.action_taken }}</p>
+        <p><span class="label">Processed At:</span> {{ scored_alert.processed_at }}</p>
+
+        <p><span class="label">Score Reasons:</span></p>
+        <ul>
+            {% for reason in scored_alert.score_reasons %}
+            <li>{{ reason }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>Evaluation</h2>
+        <p><span class="label">Expected Risk Band:</span> {{ evaluation.expected_risk_band }}</p>
+        <p><span class="label">Predicted Risk Band:</span> {{ evaluation.predicted_risk_band }}</p>
+        <p><span class="label">Band Correct:</span> {{ evaluation.is_correct_band }}</p>
+        <p><span class="label">Expected Action:</span> {{ evaluation.expected_action }}</p>
+        <p><span class="label">Predicted Action:</span> {{ evaluation.predicted_action }}</p>
+        <p><span class="label">Action Correct:</span> {{ evaluation.is_correct_action }}</p>
+    </div>
+</body>
+</html>

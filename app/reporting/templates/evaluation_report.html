@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluation Summary Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background-color: #f7f9fc;
+            color: #222;
+        }
+        h1, h2 {
+            color: #1f4e79;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            margin-bottom: 24px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+        th, td {
+            border: 1px solid #d0d7de;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #eaf2f8;
+        }
+    </style>
+</head>
+<body>
+    <h1>Evaluation Summary Report</h1>
+
+    <div class="card">
+        <h2>Overall Metrics</h2>
+        <p><strong>Total Alerts:</strong> {{ summary.total_alerts }}</p>
+        <p><strong>Correct Band Predictions:</strong> {{ summary.correct_band_predictions }}</p>
+        <p><strong>Correct Action Predictions:</strong> {{ summary.correct_action_predictions }}</p>
+        <p><strong>Band Accuracy (%):</strong> {{ summary.band_accuracy }}</p>
+        <p><strong>Action Accuracy (%):</strong> {{ summary.action_accuracy }}</p>
+    </div>
+
+    <div class="card">
+        <h2>Per-Alert Evaluation</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Alert ID</th>
+                    <th>Ground Truth</th>
+                    <th>Expected Band</th>
+                    <th>Predicted Band</th>
+                    <th>Band Correct</th>
+                    <th>Expected Action</th>
+                    <th>Predicted Action</th>
+                    <th>Action Correct</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for result in results %}
+                <tr>
+                    <td>{{ result.alert_id }}</td>
+                    <td>{{ result.ground_truth_label }}</td>
+                    <td>{{ result.expected_risk_band }}</td>
+                    <td>{{ result.predicted_risk_band }}</td>
+                    <td>{{ result.is_correct_band }}</td>
+                    <td>{{ result.expected_action }}</td>
+                    <td>{{ result.predicted_action }}</td>
+                    <td>{{ result.is_correct_action }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
