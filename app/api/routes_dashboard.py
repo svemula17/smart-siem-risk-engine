@@ -28,6 +28,14 @@ def dashboard(request: Request):
         band_accuracy = round((correct_band / total_alerts) * 100, 2) if total_alerts else 0.0
         action_accuracy = round((correct_action / total_alerts) * 100, 2) if total_alerts else 0.0
 
+        # Calculate risk distribution for the chart
+        risk_distribution = {
+            "critical": sum(1 for a in scored_alerts if a.risk_score >= 80),
+            "high": sum(1 for a in scored_alerts if 60 <= a.risk_score < 80),
+            "medium": sum(1 for a in scored_alerts if 30 <= a.risk_score < 60),
+            "low": sum(1 for a in scored_alerts if a.risk_score < 30),
+        }
+
         return templates.TemplateResponse(
             "dashboard.html",
             {
@@ -39,6 +47,7 @@ def dashboard(request: Request):
                 "action_accuracy": action_accuracy,
                 "recent_scored_alerts": scored_alerts[:10],
                 "recent_blocked_ips": blocked_ips[:10],
+                "risk_distribution": risk_distribution,
             },
         )
     finally:

@@ -8,8 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
+            /* Default Dark Theme */
             --bg-color: #0f111a;
             --bg-secondary: #1a1d2d;
             --bg-tertiary: #252a41;
@@ -29,6 +32,39 @@
             
             --border-color: rgba(255, 255, 255, 0.08);
             --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            --nav-bg: rgba(15, 17, 26, 0.8);
+            --card-bg: rgba(26, 29, 45, 0.6);
+            --brand-gradient: linear-gradient(135deg, #fff 0%, #cbd5e1 100%);
+            --table-header-bg: rgba(0, 0, 0, 0.2);
+            --table-row-hover: rgba(255, 255, 255, 0.03);
+            --table-border: rgba(255, 255, 255, 0.04);
+        }
+
+        [data-theme="light"] {
+            --bg-color: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f1f5f9;
+            
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            
+            --accent-primary: #2563eb;
+            --accent-glow: rgba(37, 99, 235, 0.3);
+            
+            --status-critical: #dc2626;
+            --status-high: #ea580c;
+            --status-medium: #ca8a04;
+            --status-low: #16a34a;
+            
+            --border-color: rgba(0, 0, 0, 0.1);
+            --card-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            --nav-bg: rgba(255, 255, 255, 0.9);
+            --card-bg: rgba(255, 255, 255, 0.8);
+            --brand-gradient: linear-gradient(135deg, #0f172a 0%, #334155 100%);
+            --table-header-bg: rgba(0, 0, 0, 0.02);
+            --table-row-hover: rgba(0, 0, 0, 0.02);
+            --table-border: rgba(0, 0, 0, 0.06);
         }
 
         body {
@@ -41,6 +77,8 @@
             display: flex;
             flex-direction: column;
             overflow-x: hidden;
+            /* Theme transition */
+            transition: background-color 0.3s ease, color 0.3s ease;
             background-image: 
                 radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
                 radial-gradient(circle at 85% 30%, rgba(239, 68, 68, 0.05) 0%, transparent 40%);
@@ -48,7 +86,7 @@
 
         /* Top Navigation */
         .navbar {
-            background-color: rgba(15, 17, 26, 0.8);
+            background-color: var(--nav-bg);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--border-color);
@@ -68,7 +106,7 @@
             font-weight: 800;
             font-size: 1.5rem;
             letter-spacing: -0.02em;
-            background: linear-gradient(135deg, #fff 0%, #cbd5e1 100%);
+            background: var(--brand-gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -142,7 +180,7 @@
         }
 
         .metric-card {
-            background: rgba(26, 29, 45, 0.6);
+            background: var(--card-bg);
             backdrop-filter: blur(10px);
             border: 1px solid var(--border-color);
             border-radius: 16px;
@@ -220,7 +258,7 @@
 
         /* Panel/Table Container */
         .panel {
-            background: rgba(26, 29, 45, 0.6);
+            background: var(--card-bg);
             backdrop-filter: blur(10px);
             border: 1px solid var(--border-color);
             border-radius: 16px;
@@ -271,19 +309,19 @@
             color: var(--text-secondary);
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            background: rgba(0, 0, 0, 0.2);
+            background: var(--table-header-bg);
             border-bottom: 1px solid var(--border-color);
         }
 
         td {
             padding: 1rem 1.5rem;
             font-size: 0.875rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            border-bottom: 1px solid var(--table-border);
             transition: background 0.2s ease;
         }
 
         tbody tr:hover td {
-            background: rgba(255, 255, 255, 0.03);
+            background: var(--table-row-hover);
         }
 
         tbody tr:last-child td {
@@ -363,6 +401,52 @@
             opacity: 0.5;
         }
 
+        /* Search Input */
+        .search-container {
+            position: relative;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 8px 12px 8px 36px;
+            background: rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            background: rgba(0, 0, 0, 0.2);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+
     </style>
 </head>
 <body>
@@ -376,9 +460,31 @@
             </div>
             Smart SIEM
         </div>
-        <div class="nav-status">
-            <div class="status-dot"></div>
-            Engine Active
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <div class="nav-status">
+                <div class="status-dot"></div>
+                Engine Active
+            </div>
+            
+            <!-- Theme Toggle Button -->
+            <button id="theme-toggle" style="background: transparent; border: 1px solid var(--border-color); border-radius: 8px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-primary); transition: all 0.2s ease; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                <!-- Sun Icon -->
+                <svg id="theme-toggle-light-icon" style="display: none;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="5"></circle>
+                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+                <!-- Moon Icon -->
+                <svg id="theme-toggle-dark-icon" style="display: block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+            </button>
         </div>
     </nav>
 
@@ -412,7 +518,23 @@
         </div>
 
         <div class="content-grid">
+            <!-- New Chart Panel -->
             <div class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                            <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
+                            <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+                        </svg>
+                        Risk Distribution Breakdown
+                    </h2>
+                </div>
+                <div class="chart-container">
+                    <canvas id="riskChart"></canvas>
+                </div>
+            </div>
+
+            <div class="panel" style="grid-column: 1 / -1;">
                 <div class="panel-header">
                     <h2 class="panel-title">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
@@ -420,6 +542,13 @@
                         </svg>
                         Recent Threat Analysis Feed
                     </h2>
+                    <div class="search-container">
+                        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        <input type="text" id="alertSearch" class="search-input" placeholder="Search ID or Prescribed Action...">
+                    </div>
                 </div>
                 <div class="table-responsive">
                     {% if recent_scored_alerts %}
@@ -433,9 +562,9 @@
                                 <th>Status</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="alertsTableBody">
                             {% for alert in recent_scored_alerts %}
-                            <tr>
+                            <tr class="alert-row">
                                 <td class="mono id-cell" title="{{ alert.id }}">{{ alert.id }}</td>
                                 <td class="mono id-cell" title="{{ alert.raw_alert_id }}">{{ alert.raw_alert_id }}</td>
                                 <td class="mono score-renderer" data-score="{{ alert.risk_score }}">{{ alert.risk_score }}/100</td>
@@ -527,6 +656,118 @@
                 else if (action.includes('store')) el.classList.add('badge-store');
                 else el.classList.add('badge-default');
             });
+            // Theme Toggle Logic
+            const themeToggleBtn = document.getElementById('theme-toggle');
+            const darkIcon = document.getElementById('theme-toggle-dark-icon');
+            const lightIcon = document.getElementById('theme-toggle-light-icon');
+            
+            // Check for saved theme preference or use system preference
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            let currentIsLight = false;
+            
+            if (savedTheme === 'light' || (!savedTheme && !prefersDark)) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                darkIcon.style.display = 'block';
+                lightIcon.style.display = 'none';
+                currentIsLight = true;
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                darkIcon.style.display = 'none';
+                lightIcon.style.display = 'block';
+            }
+
+            // Chart.js Configuration
+            const riskData = {{ risk_distribution | tojson }};
+            const ctx = document.getElementById('riskChart').getContext('2d');
+            
+            const commonChartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            color: currentIsLight ? '#475569' : '#94a3b8',
+                            font: { family: "'Inter', sans-serif", size: 12 }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: currentIsLight ? 'rgba(255, 255, 255, 0.9)' : 'rgba(15, 17, 26, 0.9)',
+                        titleColor: currentIsLight ? '#0f172a' : '#ffffff',
+                        bodyColor: currentIsLight ? '#475569' : '#94a3b8',
+                        borderColor: currentIsLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)',
+                        borderWidth: 1,
+                        padding: 10,
+                        boxPadding: 4
+                    }
+                },
+                cutout: '70%',
+                borderWidth: 0
+            };
+
+            let riskChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Critical', 'High', 'Medium', 'Low'],
+                    datasets: [{
+                        data: [riskData.critical, riskData.high, riskData.medium, riskData.low],
+                        backgroundColor: [
+                            '#ef4444', // Critical
+                            '#f97316', // High
+                            '#eab308', // Medium
+                            '#22c55e'  // Low
+                        ],
+                        hoverOffset: 4
+                    }]
+                },
+                options: commonChartOptions
+            });
+
+            // Toggle function handling theme & chart updates
+            themeToggleBtn.addEventListener('click', () => {
+                let currentTheme = document.documentElement.getAttribute('data-theme');
+                let targetTheme = currentTheme === 'light' ? 'dark' : 'light';
+                
+                document.documentElement.setAttribute('data-theme', targetTheme);
+                localStorage.setItem('theme', targetTheme);
+                
+                let isNowLight = (targetTheme === 'light');
+
+                if (isNowLight) {
+                    darkIcon.style.display = 'block';
+                    lightIcon.style.display = 'none';
+                } else {
+                    darkIcon.style.display = 'none';
+                    lightIcon.style.display = 'block';
+                }
+
+                // Update Chart.js colors based on theme
+                riskChart.options.plugins.legend.labels.color = isNowLight ? '#475569' : '#94a3b8';
+                riskChart.options.plugins.tooltip.backgroundColor = isNowLight ? 'rgba(255, 255, 255, 0.9)' : 'rgba(15, 17, 26, 0.9)';
+                riskChart.options.plugins.tooltip.titleColor = isNowLight ? '#0f172a' : '#ffffff';
+                riskChart.options.plugins.tooltip.bodyColor = isNowLight ? '#475569' : '#94a3b8';
+                riskChart.options.plugins.tooltip.borderColor = isNowLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)';
+                riskChart.update();
+            });
+
+            // Live Search / Filtering for the Alerts Table
+            const searchInput = document.getElementById('alertSearch');
+            const alertRows = document.querySelectorAll('.alert-row');
+
+            if (searchInput) {
+                searchInput.addEventListener('keyup', function(e) {
+                    const term = e.target.value.toLowerCase();
+                    alertRows.forEach(row => {
+                        const text = row.textContent.toLowerCase();
+                        if (text.includes(term)) {
+                            row.style.display = '';
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    });
+                });
+            }
         });
     </script>
 </body>
