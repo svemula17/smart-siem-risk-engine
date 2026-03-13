@@ -18,6 +18,12 @@ def init_db() -> None:
 
 init_db()
 
+from fastapi.responses import RedirectResponse
+
+@app.get("/", include_in_schema=False)
+def root():
+    return RedirectResponse(url="/dashboard")
+
 app.include_router(health_router, tags=["Health"])
 app.include_router(alerts_router, tags=["Alerts"])
 app.include_router(metrics_router, tags=["Metrics"])
