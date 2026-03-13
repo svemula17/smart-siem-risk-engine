@@ -18,6 +18,7 @@ from app.services.alert_service import (
     save_scored_alert,
 )
 from app.services.evaluation_service import save_evaluation_result
+import requests
 
 RAW_ALERTS_DIR = "data/raw_alerts"
 
@@ -54,6 +55,34 @@ def main() -> None:
             )
 
             risk_band = get_risk_band(scored.risk_score)
+
+            # Broadcast to real-time dashboard
+            try:
+                alert_html = f"""
+                <tr class="alert-row highlight-new">
+                    <td class="mono id-cell" title="New Alert">*Live*</td>
+                    <td class="mono id-cell" title="{alert.id}">{alert.id}</td>
+                    <td class="mono score-renderer" data-score="{scored.risk_score}">{scored.risk_score}/100</td>
+                    <td>
+                        <span class="badge badge-action badge-{scored.recommended_action.split('_')[0]}">
+                            {scored.recommended_action.replace('_', ' ')}
+                        </span>
+                    </td>
+                    <td style="color: var(--text-secondary); font-size: 0.8125rem;">
+                        {scored.action_taken.replace('_', ' ').title()}
+                    </td>
+                </tr>
+                """
+                payload = {
+                    "alert_html": alert_html,
+                    "risk_score": scored.risk_score,
+                    "recommended_action": scored.recommended_action,
+                    "action_taken": scored.action_taken,
+                    "mitre_ids": normalized.mitre_ids
+                }
+                requests.post("http://127.0.0.1:8000/api/internal/broadcast", json=payload, timeout=1)
+            except requests.exceptions.RequestException:
+                pass # Dashboard might not be running, ignore
 
             print("RAW ALERT")
             print("ID:", alert.id)

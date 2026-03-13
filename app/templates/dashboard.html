@@ -65,6 +65,11 @@
             --table-header-bg: rgba(0, 0, 0, 0.02);
             --table-row-hover: rgba(0, 0, 0, 0.02);
             --table-border: rgba(0, 0, 0, 0.06);
+
+            /* Override the global ambient gradients for light mode */
+            --ambient-gradient-1: rgba(37, 99, 235, 0.05);
+            --ambient-gradient-2: rgba(220, 38, 38, 0.03);
+            --panel-gradient: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.85) 100%);
         }
 
         body {
@@ -80,8 +85,8 @@
             /* Theme transition */
             transition: background-color 0.3s ease, color 0.3s ease;
             background-image: 
-                radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
-                radial-gradient(circle at 85% 30%, rgba(239, 68, 68, 0.05) 0%, transparent 40%);
+                radial-gradient(circle at 15% 50%, var(--ambient-gradient-1) 0%, transparent 40%),
+                radial-gradient(circle at 85% 30%, var(--ambient-gradient-2) 0%, transparent 40%);
         }
 
         /* Top Navigation */
@@ -143,42 +148,45 @@
             animation: pulse 2s infinite;
         }
 
-        /* Main Content */
-        .container {
-            max-width: 1400px;
+        /* Main Content wrapper */
+        .dashboard-wrapper {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 1.5rem;
+            max-width: 1600px;
             margin: 0 auto;
-            padding: 2rem;
+            padding: 1.5rem;
+            height: calc(100vh - 70px); /* 100vh minus navbar block */
             width: 100%;
             box-sizing: border-box;
-            flex: 1;
+            overflow: hidden;
         }
 
-        /* Header Section */
-        .page-header {
-            margin-bottom: 2rem;
-            animation: slideDown 0.5s ease-out;
+        /* Left Side: Metrics Sidebar */
+        .metrics-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            height: 100%;
+            overflow-y: auto;
+            /* Hide scrollbar for cleaner look */
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .metrics-sidebar::-webkit-scrollbar {
+            display: none;
         }
 
-        .page-title {
-            font-size: 2rem;
-            margin: 0 0 0.5rem 0;
-            font-weight: 700;
-        }
-
-        .page-subtitle {
-            color: var(--text-secondary);
-            margin: 0;
-            font-size: 1rem;
-        }
-
-        /* Metrics / KPIs grid */
-        .metrics-grid {
+        /* Right Side: Main Content Area */
+        .main-content {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            grid-template-rows: 1fr 300px; /* Table takes upper space, Chart/FW take bottom 300px */
             gap: 1.5rem;
-            margin-bottom: 2.5rem;
+            height: 100%;
+            overflow: hidden;
         }
 
+        /* Metrics / KPIs grid (Now stack vertically in sidebar) */
         .metric-card {
             background: var(--card-bg);
             backdrop-filter: blur(10px);
@@ -231,27 +239,66 @@
             letter-spacing: 0.05em;
         }
 
+        /* MITRE Tags */
+        .mitre-tag {
+            background-color: var(--table-header-bg);
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .mitre-tag.active {
+            background-color: var(--status-critical);
+            color: white;
+            border-color: var(--status-critical);
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+        }
+
+        @keyframes flashMitre {
+            0% { transform: scale(1); box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
+            50% { transform: scale(1.1); box-shadow: 0 0 30px rgba(239, 68, 68, 0.8); background-color: #fca5a5; }
+            100% { transform: scale(1); box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
+        }
+
+        .mitre-tag.flash {
+            animation: flashMitre 0.8s ease-out;
+        }
+
         .metric-value {
             font-size: 2.5rem;
             font-weight: 800;
-            color: var(--text-primary);
             font-family: 'JetBrains Mono', monospace;
-            line-height: 1.2;
+            line-height: 1;
         }
 
         .metric-value.highlight-blue { background: linear-gradient(90deg, #60a5fa, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .metric-value.highlight-red { background: linear-gradient(90deg, #f87171, #ef4444); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .metric-value.highlight-green { background: linear-gradient(90deg, #4ade80, #22c55e); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
-        /* Content Grid */
-        .content-grid {
+        /* Bottom Area Grid */
+        .bottom-grid {
             display: grid;
-            grid-template-columns: 2fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 1.5rem;
+            height: 100%;
+            overflow: hidden;
         }
 
         @media (max-width: 1024px) {
-            .content-grid {
+            .dashboard-wrapper {
+                grid-template-columns: 1fr;
+                height: auto;
+                overflow: visible;
+            }
+            .main-content {
+                grid-template-rows: auto auto;
+            }
+            .bottom-grid {
                 grid-template-columns: 1fr;
             }
         }
@@ -293,7 +340,10 @@
         }
 
         .table-responsive {
-            overflow-x: auto;
+            overflow: auto;
+            height: 100%;
+            /* Hide scrollbars for robustness */
+            scrollbar-width: thin;
         }
 
         table {
@@ -361,10 +411,10 @@
         .score-low { color: var(--status-low); font-weight: 500; }
 
         /* Action Badges */
-        .badge-block { background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3); }
-        .badge-alert { background: rgba(234, 179, 8, 0.15); color: #fde047; border: 1px solid rgba(234, 179, 8, 0.3); }
-        .badge-store { background: rgba(59, 130, 246, 0.15); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); }
-        .badge-default { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.3); }
+        .badge-block { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .badge-alert { background: rgba(234, 179, 8, 0.15); color: #eab308; border: 1px solid rgba(234, 179, 8, 0.3); }
+        .badge-store { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
+        .badge-default { background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); }
 
         /* Animations */
         @keyframes pulse {
@@ -405,7 +455,7 @@
         .search-container {
             position: relative;
             width: 100%;
-            max-width: 300px;
+            max-width: 250px;
         }
 
         .search-input {
@@ -439,12 +489,101 @@
 
         .chart-container {
             width: 100%;
-            height: 250px;
+            height: calc(100% - 65px); /* Minus panel header */
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 1rem;
             box-sizing: border-box;
+            position: relative;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 1.5rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+            position: relative;
+            transform: scale(0.95);
+            transition: transform 0.2s ease-out;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1.5rem;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        .modal-close:hover {
+            color: var(--text-primary);
+        }
+
+        .alert-row {
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .alert-row:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+        [data-theme="light"] .alert-row:hover {
+            background: rgba(0, 0, 0, 0.03);
+        }
+
+        /* Quick Actions */
+        .btn-action {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Inter', sans-serif;
+        }
+        .btn-action:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: var(--text-secondary);
+        }
+        .btn-action.release:hover {
+            background: rgba(34, 197, 94, 0.1);
+            border-color: #22c55e;
+            color: #22c55e;
+        }
+        [data-theme="light"] .btn-action:hover {
+            background: rgba(0,0,0,0.05);
         }
 
     </style>
@@ -488,15 +627,18 @@
         </div>
     </nav>
 
-    <div class="container">
-        <div class="page-header">
-            <h1 class="page-title">Risk Analysis Engine</h1>
-            <p class="page-subtitle">Real-time threat detection and automated response metrics</p>
-        </div>
+    <div class="dashboard-wrapper">
+        
+        <!-- LEFT SIDEBAR: Metrics -->
+        <aside class="metrics-sidebar">
+            <!-- Header built into sidebar -->
+            <div style="margin-bottom: 0.5rem; animation: slideDown 0.5s ease-out;">
+                <h1 style="font-size: 1.5rem; margin: 0 0 0.25rem 0; font-weight: 700;">Risk Analysis</h1>
+                <p style="color: var(--text-secondary); margin: 0; font-size: 0.875rem;">Engine Operational</p>
+            </div>
 
-        <div class="metrics-grid">
             <div class="metric-card">
-                <div class="metric-title">Total Processed Alerts</div>
+                <div class="metric-title">Processed Alerts</div>
                 <div class="metric-value">{{ raw_alert_count }}</div>
             </div>
             <div class="metric-card">
@@ -515,45 +657,32 @@
                 <div class="metric-title">Action Precision</div>
                 <div class="metric-value highlight-green">{{ action_accuracy }}%</div>
             </div>
-        </div>
+        </aside>
 
-        <div class="content-grid">
-            <!-- New Chart Panel -->
+        <!-- RIGHT MAIN AREA: Tables & Charts -->
+        <main class="main-content">
+            
+            <!-- TOP RIGHT: Feed Table -->
             <div class="panel">
-                <div class="panel-header">
-                    <h2 class="panel-title">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
-                            <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
-                            <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
-                        </svg>
-                        Risk Distribution Breakdown
-                    </h2>
-                </div>
-                <div class="chart-container">
-                    <canvas id="riskChart"></canvas>
-                </div>
-            </div>
-
-            <div class="panel" style="grid-column: 1 / -1;">
                 <div class="panel-header">
                     <h2 class="panel-title">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
                             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
                         </svg>
-                        Recent Threat Analysis Feed
+                        Continuous Threat Feed
                     </h2>
                     <div class="search-container">
                         <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="11" cy="11" r="8"></circle>
                             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                         </svg>
-                        <input type="text" id="alertSearch" class="search-input" placeholder="Search ID or Prescribed Action...">
+                        <input type="text" id="alertSearch" class="search-input" placeholder="Search Filter...">
                     </div>
                 </div>
                 <div class="table-responsive">
                     {% if recent_scored_alerts %}
                     <table>
-                        <thead>
+                        <thead style="position: sticky; top: 0; z-index: 10;">
                             <tr>
                                 <th>Eval ID</th>
                                 <th>Source Alert</th>
@@ -593,43 +722,127 @@
                 </div>
             </div>
 
-            <div class="panel">
-                <div class="panel-header">
-                    <h2 class="panel-title" style="color: #f87171;">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
-                            <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon>
-                            <line x1="12" y1="8" x2="12" y2="12"></line>
-                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                        </svg>
-                        FW Drop List
-                    </h2>
-                </div>
-                <div class="table-responsive">
-                    {% if recent_blocked_ips %}
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Target IP</th>
-                                <th>Enforcement Reason</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for ip in recent_blocked_ips %}
-                            <tr>
-                                <td class="mono" style="color: #fca5a5; font-weight: 600;">{{ ip.ip_address }}</td>
-                                <td style="font-size: 0.8125rem; color: var(--text-secondary)">{{ ip.reason }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                    {% else %}
-                    <div class="empty-state">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                        </svg>
-                        <p>No IPs currently blocked.</p>
+            <!-- BOTTOM RIGHT: Chart & FW Drop List -->
+            <div class="bottom-grid">
+                
+                <!-- Chart Panel -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                                <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
+                                <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+                            </svg>
+                            Risk Distribution
+                        </h2>
                     </div>
-                    {% endif %}
+                    <div class="chart-container">
+                        <canvas id="riskChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- MITRE ATT&CK Tracking Panel -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title" style="color: #a855f7;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="3" y1="9" x2="21" y2="9"></line>
+                                <line x1="9" y1="21" x2="9" y2="9"></line>
+                            </svg>
+                            Active MITRE ATT&CK
+                        </h2>
+                    </div>
+                    <div class="panel-body" style="padding: 1.5rem; overflow-y: auto;">
+                        <div id="mitreMatrix" style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+                            <!-- Top level tactics populated dynamically or statically based on standard MITRE set -->
+                            <div class="mitre-tag" data-tactic="Initial Access">Initial Access</div>
+                            <div class="mitre-tag" data-tactic="Execution">Execution</div>
+                            <div class="mitre-tag" data-tactic="Persistence">Persistence</div>
+                            <div class="mitre-tag" data-tactic="Privilege Escalation">Privilege Esc.</div>
+                            <div class="mitre-tag" data-tactic="Defense Evasion">Defense Evasion</div>
+                            <div class="mitre-tag" data-tactic="Credential Access">Credential Access</div>
+                            <div class="mitre-tag" data-tactic="Discovery">Discovery</div>
+                            <div class="mitre-tag" data-tactic="Lateral Movement">Lateral Movement</div>
+                            <div class="mitre-tag" data-tactic="Collection">Collection</div>
+                            <div class="mitre-tag" data-tactic="Command and Control">C2</div>
+                            <div class="mitre-tag" data-tactic="Exfiltration">Exfiltration</div>
+                            <div class="mitre-tag" data-tactic="Impact">Impact</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FW Panel -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title" style="color: #f87171;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                                <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg>
+                            Active FW Drop List
+                        </h2>
+                    </div>
+                    <div class="table-responsive">
+                        {% if recent_blocked_ips %}
+                        <table>
+                            <thead style="position: sticky; top: 0; z-index: 10;">
+                                <tr>
+                                    <th>Target IP</th>
+                                    <th>Enforcement Reason</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ip in recent_blocked_ips %}
+                                <tr>
+                                    <td class="mono" style="color: #ef4444; font-weight: 600;">{{ ip.ip_address }}</td>
+                                    <td style="font-size: 0.8125rem; color: var(--text-secondary)">{{ ip.reason }}</td>
+                                    <td>
+                                        <button class="btn-action release" onclick="releaseIP('{{ ip.ip_address }}', this)">Unblock</button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        {% else %}
+                        <div class="empty-state">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                            </svg>
+                            <p>No IPs currently blocked.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+            </div> <!-- end bottom grid -->
+        </main> <!-- end main area -->
+    </div> <!-- end wrapper -->
+
+    <!-- Details Modal -->
+    <div id="alertModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">×</button>
+            <h2 style="margin-top: 0; font-size: 1.25rem;">Threat Intelligence Report</h2>
+            <div style="margin-top: 1.5rem; display: grid; gap: 1rem;">
+                <div>
+                    <span style="color: var(--text-secondary); font-size: 0.875rem;">Evaluation ID</span>
+                    <div id="modal-eval-id" class="mono" style="font-size: 1rem; margin-top: 0.25rem;"></div>
+                </div>
+                <div>
+                    <span style="color: var(--text-secondary); font-size: 0.875rem;">Raw Alert Reference</span>
+                    <div id="modal-raw-id" class="mono" style="font-size: 1rem; margin-top: 0.25rem;"></div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <span style="color: var(--text-secondary); font-size: 0.875rem;">Risk Engine Score</span>
+                        <div id="modal-score" style="font-size: 1.25rem; font-weight: 700; margin-top: 0.25rem;"></div>
+                    </div>
+                    <div>
+                        <span style="color: var(--text-secondary); font-size: 0.875rem;">Action Taken</span>
+                        <div id="modal-action" style="font-size: 1rem; margin-top: 0.25rem; font-weight: 500;"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -768,7 +981,157 @@
                     });
                 });
             }
+            // Initialize MITRE TTP Matrix from Server Data
+            const initialMitreIds = {{ active_mitre_ids | tojson | safe }};
+            const mitreTags = document.querySelectorAll('.mitre-tag');
+            initialMitreIds.forEach(m_id => {
+                mitreTags.forEach(tag => {
+                    // Match the Tactic name or ID (We'll check against common values)
+                    // Since our Zeek dataset tags by Tactic/Technique, we'll try matching text dynamically:
+                    if (tag.textContent.toLowerCase().includes(m_id.toLowerCase()) || 
+                        tag.getAttribute('data-tactic').toLowerCase() === m_id.toLowerCase()) {
+                        tag.classList.add('active');
+                    }
+                });
+            });
+
+            // WebSocket Client Implementation
+            setupWebSocket();
         });
+
+        // --------------------------------------------------------
+        // WebSocket logic
+        // --------------------------------------------------------
+        function setupWebSocket() {
+            const wsUrl = `ws://${window.location.host}/ws/dashboard`;
+            const socket = new WebSocket(wsUrl);
+
+            socket.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                if(data.alert_html) {
+                    // Update the table
+                    const tbody = document.getElementById('alertsTableBody');
+                    tbody.insertAdjacentHTML('afterbegin', data.alert_html);
+
+                    // Re-bind row click to new row
+                    const newRow = tbody.firstElementChild;
+                    newRow.addEventListener('click', () => {
+                        handleRowClick(newRow);
+                    });
+
+                    // Remove empty state if present
+                    const tableContainer = tbody.closest('.table-responsive');
+                    const emptyState = tableContainer.querySelector('.empty-state');
+                    if (emptyState) {
+                        emptyState.style.display = 'none';
+                        tableContainer.querySelector('table').style.display = 'table';
+                    }
+
+                    // Optional: limit rows to prevent memory build up over days
+                    if (tbody.children.length > 50) {
+                        tbody.removeChild(tbody.lastElementChild);
+                    }
+                    
+                    // Trigger a flash overlay animation visually on the new row
+                    setTimeout(() => newRow.classList.remove('highlight-new'), 2000);
+                    
+                    // Flash any detected MITRE TTPs on the matrix
+                    if(data.mitre_ids && data.mitre_ids.length > 0) {
+                        const mTags = document.querySelectorAll('.mitre-tag');
+                        data.mitre_ids.forEach(m_id => {
+                            mTags.forEach(tag => {
+                                if (tag.textContent.toLowerCase().includes(m_id.toLowerCase()) || 
+                                    tag.getAttribute('data-tactic').toLowerCase() === m_id.toLowerCase()) {
+                                    
+                                    tag.classList.add('active'); // set permanent active state
+                                    
+                                    // Trigger flash animation
+                                    tag.classList.remove('flash');
+                                    void tag.offsetWidth; // trigger DOM reflow to restart anim
+                                    tag.classList.add('flash');
+                                }
+                            });
+                        });
+                    }
+                }
+            };
+
+            socket.onclose = function(event) {
+                console.log("WebSocket closed. Reconnecting in 5s...");
+                setTimeout(setupWebSocket, 5000); // Auto reconnect
+            };
+        }
+
+        // --------------------------------------------------------
+        // Interactive Playbooks (Modals & Actions)
+        // --------------------------------------------------------
+        
+        // Modal functions
+        const modal = document.getElementById('alertModal');
+        
+        function handleRowClick(row) {
+            const cells = row.querySelectorAll('td');
+            if(cells.length < 5) return;
+            
+            document.getElementById('modal-eval-id').textContent = cells[0].textContent.trim();
+            document.getElementById('modal-raw-id').textContent = cells[1].textContent.trim();
+            
+            const scoreEl = document.getElementById('modal-score');
+            scoreEl.textContent = cells[2].textContent.trim();
+            // copy color classes
+            scoreEl.className = cells[2].className.replace('mono', '').replace('score-renderer', '').trim();
+
+            document.getElementById('modal-action').textContent = cells[4].textContent.trim();
+            
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            modal.classList.remove('active');
+        }
+
+        // Close on clicking outside the bounds
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        // Bind existing initial rows to modal clicks
+        document.querySelectorAll('.alert-row').forEach(row => {
+            row.addEventListener('click', () => handleRowClick(row));
+        });
+
+        // Quick Action - Unblock IP
+        async function releaseIP(ipAddress, btnElement) {
+            btnElement.disabled = true;
+            btnElement.textContent = "Processing...";
+            
+            try {
+                const response = await fetch('/api/unblock_ip', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ip_address: ipAddress })
+                });
+                
+                if (response.ok) {
+                    // Remove row from UI visually
+                    const tr = btnElement.closest('tr');
+                    tr.style.opacity = '0';
+                    setTimeout(() => tr.remove(), 300);
+                } else {
+                    btnElement.textContent = "Error";
+                    setTimeout(() => {
+                        btnElement.disabled = false;
+                        btnElement.textContent = "Unblock";
+                    }, 2000);
+                }
+            } catch (err) {
+                console.error("Failed to unblock IP", err);
+                btnElement.disabled = false;
+                btnElement.textContent = "Unblock";
+            }
+        }
     </script>
 </body>
 </html>
