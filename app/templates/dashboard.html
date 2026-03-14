@@ -35,7 +35,7 @@
             --nav-bg: rgba(15, 17, 26, 0.8);
             --card-bg: rgba(26, 29, 45, 0.6);
             --brand-gradient: linear-gradient(135deg, #fff 0%, #cbd5e1 100%);
-            --table-header-bg: rgba(0, 0, 0, 0.2);
+            --table-header-bg: #1f2335; /* Solid color for sticky header */
             --table-row-hover: rgba(255, 255, 255, 0.03);
             --table-border: rgba(255, 255, 255, 0.04);
         }
@@ -62,7 +62,7 @@
             --nav-bg: rgba(255, 255, 255, 0.9);
             --card-bg: rgba(255, 255, 255, 0.8);
             --brand-gradient: linear-gradient(135deg, #0f172a 0%, #334155 100%);
-            --table-header-bg: rgba(0, 0, 0, 0.02);
+            --table-header-bg: #f8fafc; /* Solid color for sticky header */
             --table-row-hover: rgba(0, 0, 0, 0.02);
             --table-border: rgba(0, 0, 0, 0.06);
 
@@ -147,6 +147,54 @@
             box-shadow: 0 0 10px var(--status-low);
             animation: pulse 2s infinite;
         }
+
+        /* Maximize Panel Feature */
+        .maximize-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            border-radius: 6px;
+            padding: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 12px;
+        }
+        .maximize-btn:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        [data-theme="light"] .maximize-btn {
+            background: rgba(0, 0, 0, 0.03);
+        }
+        [data-theme="light"] .maximize-btn:hover {
+            background: rgba(0, 0, 0, 0.06);
+        }
+
+        .panel.maximized {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 9999;
+            margin: 0;
+            border-radius: 0;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-color); /* Overwrite glassmorphism for absolute performance via scrolling */
+        }
+        .panel.maximized .panel-body,
+        .panel.maximized .table-responsive,
+        .panel.maximized .chart-container {
+            flex-grow: 1;
+            height: auto;
+            max-height: calc(100vh - 80px); /* Fill space under header */
+            overflow-y: auto;
+        }
+
 
         /* Main Content wrapper */
         .dashboard-wrapper {
@@ -671,12 +719,19 @@
                         </svg>
                         Continuous Threat Feed
                     </h2>
-                    <div class="search-container" style="width: 300px;">
-                        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                        </svg>
-                        <input type="text" id="alertSearch" class="search-input" placeholder="Hunt: mitre:T1110 risk:>80...">
+                    <div style="display: flex; align-items: center; margin-left: auto; gap: 12px;">
+                        <div class="search-container" style="width: 300px; margin: 0;">
+                            <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                            <input type="text" id="alertSearch" class="search-input" placeholder="Hunt: mitre:T1110 risk:>80...">
+                        </div>
+                        <button class="maximize-btn" onclick="toggleMaximize(this)" title="Toggle Fullscreen">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                            </svg>
+                        </button>
                     </div>
                 </div>
                 <div class="table-responsive">
@@ -735,6 +790,11 @@
                             </svg>
                             Risk Distribution
                         </h2>
+                        <button class="maximize-btn" onclick="toggleMaximize(this)" title="Toggle Fullscreen">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                            </svg>
+                        </button>
                     </div>
                     <div class="chart-container">
                         <canvas id="riskChart"></canvas>
@@ -752,6 +812,11 @@
                             </svg>
                             Active MITRE ATT&CK
                         </h2>
+                        <button class="maximize-btn" onclick="toggleMaximize(this)" title="Toggle Fullscreen">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                            </svg>
+                        </button>
                     </div>
                     <div class="panel-body" style="padding: 1.5rem; overflow-y: auto;">
                         <div id="mitreMatrix" style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
@@ -783,6 +848,11 @@
                             </svg>
                             Global Origins
                         </h2>
+                        <button class="maximize-btn" onclick="toggleMaximize(this)" title="Toggle Fullscreen">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                            </svg>
+                        </button>
                     </div>
                     <div class="panel-body" style="padding: 0; position: relative; z-index: 1;">
                         <div id="threatMap" style="width: 100%; height: 100%; min-height: 250px; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;"></div>
@@ -800,6 +870,11 @@
                             </svg>
                             Active FW Drop List
                         </h2>
+                        <button class="maximize-btn" onclick="toggleMaximize(this)" title="Toggle Fullscreen">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                            </svg>
+                        </button>
                     </div>
                     <div class="table-responsive">
                         {% if recent_blocked_ips %}
