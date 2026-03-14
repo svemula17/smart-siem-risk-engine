@@ -86,6 +86,10 @@ class BroadcastData(BaseModel):
     recommended_action: str
     action_taken: str
     mitre_ids: list[str] = []
+    lat: float | None = None
+    lon: float | None = None
+    country: str | None = None
+    city: str | None = None
 
 @router.post("/api/internal/broadcast")
 async def broadcast_alert(data: dict):
@@ -136,5 +140,83 @@ def block_ip(action: IPAction):
             db.add(new_block)
             db.commit()
         return {"status": "success", "message": f"IP {action.ip_address} blocked."}
+    finally:
+        db.close()
+
+
+class HuntQuery(BaseModel):
+    query: str
+
+@router.post("/api/hunt")
+def hunt_threats(hunt: HuntQuery):
+    """
+    Experimental Active Threat Hunting Endpoint.
+    Translates a simple string like 'mitre:T1110 risk:>80 action:block' into an advanced SQL query.
+    """
+    from sqlalchemy import or_, and_
+    from app.models.db_models import ScoredAlertDB, NormalizedAlertDB, RawAlertDB
+    from app.database import SessionLocal
+    import re
+    
+    db = SessionLocal()
+    try:
+        query_str = hunt.query.lower().strip()
+        
+        # Base joins
+        query = db.query(ScoredAlertDB, NormalizedAlertDB, RawAlertDB)\
+                  .join(NormalizedAlertDB, ScoredAlertDB.raw_alert_id == NormalizedAlertDB.raw_alert_id)\
+                  .join(RawAlertDB, ScoredAlertDB.raw_alert_id == RawAlertDB.id)
+
+        filters = []
+
+        # Parse 'risk:>80' or 'risk:90'
+        risk_match = re.search(r'risk:([><=]?)(\d+)', query_str)
+        if risk_match:
+            op, val = risk_match.groups()
+            val = int(val)
+            if op == '>': filters.append(ScoredAlertDB.risk_score > val)
+            elif op == '<': filters.append(ScoredAlertDB.risk_score < val)
+            else: filters.append(ScoredAlertDB.risk_score == val)
+
+        # Parse 'mitre:T1110'
+        mitre_match = re.search(r'mitre:(t\d{4})', query_str)
+        if mitre_match:
+            ttp = mitre_match.group(1).upper()
+            filters.append(NormalizedAlertDB.mitre_ids_json.like(f"%{ttp}%"))
+
+        # Parse 'action:block'
+        action_match = re.search(r'action:(\w+)', query_str)
+        if action_match:
+            actionStr = action_match.group(1)
+            filters.append(ScoredAlertDB.recommended_action.like(f"%{actionStr}%"))
+
+        # Parse 'ip:192.168.1.1'
+        ip_match = re.search(r'ip:([\d\.]+)', query_str)
+        if ip_match:
+            ip = ip_match.group(1)
+            filters.append(NormalizedAlertDB.source_ip == ip)
+
+        # General keyword search in the raw message if no specific tags found
+        if not filters and query_str:
+            filters.append(RawAlertDB.message.ilike(f"%{query_str}%"))
+
+        if filters:
+            query = query.filter(and_(*filters))
+
+        # Limit to 50 for performance
+        results = query.order_by(ScoredAlertDB.id.desc()).limit(50).all()
+
+        formatted_results = []
+        for scored, norm, raw in results:
+            formatted_results.append({
+                "alert_id": raw.id,
+                "timestamp": scored.processed_at,
+                "risk_score": scored.risk_score,
+                "action": scored.recommended_action,
+                "source_ip": norm.source_ip,
+                "message": raw.message
+            })
+
+        return {"status": "success", "results": formatted_results}
     finally:
         db.close()

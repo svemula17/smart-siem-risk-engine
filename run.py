@@ -56,6 +56,12 @@ def main() -> None:
 
             risk_band = get_risk_band(scored.risk_score)
 
+            from app.services.geoip_service import geoip_engine
+            location = geoip_engine.get_location(normalized.source_ip) if normalized.source_ip else None
+            lat, lon, country, city = None, None, None, None
+            if location:
+                lat, lon, country, city = location.get('lat'), location.get('lon'), location.get('country'), location.get('city')
+
             # Broadcast to real-time dashboard
             try:
                 alert_html = f"""
@@ -78,11 +84,32 @@ def main() -> None:
                     "risk_score": scored.risk_score,
                     "recommended_action": scored.recommended_action,
                     "action_taken": scored.action_taken,
-                    "mitre_ids": normalized.mitre_ids
+                    "mitre_ids": normalized.mitre_ids,
+                    "lat": lat,
+                    "lon": lon,
+                    "country": country,
+                    "city": city
                 }
                 requests.post("http://127.0.0.1:8000/api/internal/broadcast", json=payload, timeout=1)
             except requests.exceptions.RequestException:
                 pass # Dashboard might not be running, ignore
+
+            # ----------------------------------------------------
+            # Dispatch Webhook Notifications (Feature 5)
+            # ----------------------------------------------------
+            try:
+                from app.response.notifications import notifier
+                alert_dict = {
+                    "alert_id": alert.id,
+                    "risk_score": scored.risk_score,
+                    "recommended_action": scored.recommended_action,
+                    "action_taken": scored.action_taken,
+                    "processed_at": scored.processed_at,
+                    "score_reasons": scored.score_reasons
+                }
+                notifier.send_discord_alert(alert_dict, alert.message)
+            except Exception as e:
+                print(f"Notification error: {e}")
 
             print("RAW ALERT")
             print("ID:", alert.id)

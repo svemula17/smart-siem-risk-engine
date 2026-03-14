@@ -137,7 +137,19 @@ python run.py
 ```
 
 ### 3. Empirical Verification
-Execute the standalone test script to witness the mathematical proof of the engine's 96% classification accuracy and 100% MITRE extraction capabilities against verified ground truth datasets:
+Execute the standalone test script to witness the mathematical proof of the engine's classification accuracy and 100% MITRE extraction capabilities against verified ground truth datasets:
 ```bash
 python scripts/verify_mitre_mapping.py
 ```
+
+---
+
+## 🚀 V2 Advanced Features (Newly Integrated)
+
+The SIEM has been significantly upgraded with enterprise-grade capabilities:
+
+* **🧠 Machine Learning NLP Scoring:** Blended `scikit-learn` Random Forest models analyze alert payloads natively, augmenting the deterministic heuristic scoring with predictive AI models.
+* **🌍 Interactive GeoIP Threat Map:** A real-time visually stunning node map powered by `Leaflet.js` and local SQLite caching plots incoming attacks geographically as they happen.
+* **🔎 Active Threat Hunting Query Engine:** Analysts can now execute complex hunt queries (e.g., `mitre:T1110 risk:>80 action:block`) out of the dashboard search bar, translated instantly to backend SQLAlchemy via the `/api/hunt` endpoint.
+* **🕵️ Third-Party Threat Intel Integration:** Live enrichment hooks seamlessly check suspicious IP addresses against Mock Third-Party Threat APIs, providing crucial context ('Botnet C&C', 'Tor Exit Node') directly into the scoring loop.
+* **🔔 Live Discord Webhook Alerts:** The platform no longer works in a vacuum. `CRITICAL` risk alerts are immediately forwarded as rich-embed payloads to configured Discord channels for rapid incident response alerting.
