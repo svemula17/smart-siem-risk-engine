@@ -41,14 +41,12 @@ def dashboard(request: Request):
 
         # Aggregate Active MITRE ATT&CK TTPs
         active_mitre_ids = set()
+        import json
         for alert in raw_alerts:
             # We must handle both stringified JSON lists (from sqlite) and native lists
-            import json
             try:
-                if isinstance(alert.metadata_json, str):
-                    meta = json.loads(alert.metadata_json)
-                else:
-                    meta = alert.metadata_json or {}
+                payload = json.loads(alert.raw_payload_json) if isinstance(alert.raw_payload_json, str) else (alert.raw_payload_json or {})
+                meta = payload.get("metadata", {})
                 
                 # Check suricata logs for mitre ids
                 logs = meta.get("suricata_logs", [])
@@ -60,6 +58,43 @@ def dashboard(request: Request):
                                 active_mitre_ids.add(m_id)
             except Exception:
                 pass
+
+        # Extract geo data for initial map plot
+        # Extract geo data for initial map plot
+        import sqlite3
+        import os
+        
+        geo_cache = {}
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        db_path = os.path.join(base_dir, "data", "geoip_cache.db")
+        
+        if os.path.exists(db_path):
+            try:
+                conn = sqlite3.connect(db_path)
+                cursor = conn.cursor()
+                cursor.execute("SELECT ip_address, lat, lon, country, city FROM geoip")
+                geo_cache = {row[0]: {"lat": row[1], "lon": row[2], "country": row[3], "city": row[4]} for row in cursor.fetchall()}
+                conn.close()
+            except Exception:
+                pass
+
+        from app.models.db_models import NormalizedAlertDB
+        
+        # Get historical normalized alerts that have cached locations (for map visual flair)
+        map_alerts = db.query(NormalizedAlertDB).filter(NormalizedAlertDB.source_ip.isnot(None)).order_by(desc(NormalizedAlertDB.id)).limit(1000).all()
+        geo_scored_alerts = []
+        
+        for norm in map_alerts:
+            if norm.source_ip in geo_cache:
+                loc = geo_cache[norm.source_ip]
+                if loc["lat"] and loc["lon"]:
+                    geo_scored_alerts.append({
+                        "lat": loc["lat"],
+                        "lon": loc["lon"],
+                        "country": loc["country"] or "Unknown",
+                        "city": loc["city"] or "Unknown",
+                        "risk_score": norm.raw_severity * 30 + 10 # approximate risk since scored DB might not have all limit overlap
+                    })
 
         return templates.TemplateResponse(
             "dashboard.html",
@@ -74,6 +109,7 @@ def dashboard(request: Request):
                 "recent_blocked_ips": blocked_ips[:10],
                 "risk_distribution": risk_distribution,
                 "active_mitre_ids": list(active_mitre_ids),
+                "geo_scored_alerts": geo_scored_alerts,
             },
         )
     finally:

@@ -10,6 +10,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Leaflet.js for Maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <style>
         :root {
             /* Default Dark Theme */
@@ -228,7 +231,7 @@
         /* Right Side: Main Content Area */
         .main-content {
             display: grid;
-            grid-template-rows: 1fr 300px; /* Table takes upper space, Chart/FW take bottom 300px */
+            grid-template-columns: 1fr 650px; /* Table left, 4 Panels right */
             gap: 1.5rem;
             height: 100%;
             overflow: hidden;
@@ -331,7 +334,8 @@
         /* Bottom Area Grid */
         .bottom-grid {
             display: grid;
-            grid-template-columns: 1fr 1.5fr 1fr 1fr;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
             gap: 1.5rem;
             height: 100%;
             overflow: hidden;
@@ -719,22 +723,29 @@
                         </svg>
                         Continuous Threat Feed
                     </h2>
-                    <div style="display: flex; align-items: center; margin-left: auto; gap: 12px;">
-                        <div class="search-container" style="width: 300px; margin: 0;">
-                            <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="11" cy="11" r="8"></circle>
-                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                            </svg>
-                            <input type="text" id="alertSearch" class="search-input" placeholder="Hunt: mitre:T1110 risk:>80...">
+                                        <div style="display: flex; flex-direction: column; align-items: flex-end; margin-left: auto; gap: 4px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div class="search-container" style="width: 300px; margin: 0;">
+                                <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg>
+                                <input type="text" id="alertSearch" class="search-input" placeholder="Hunt: mitre:T1110 risk:>80...">
+                            </div>
+                            <button class="maximize-btn" onclick="toggleMaximize(this)" title="Toggle Fullscreen">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                                </svg>
+                            </button>
                         </div>
-                        <button class="maximize-btn" onclick="toggleMaximize(this)" title="Toggle Fullscreen">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
-                            </svg>
-                        </button>
-                    </div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-right: 40px;">
+                            Suggested: <a href="#" onclick="document.getElementById('alertSearch').value='mitre:T1190'; handleSearch(); return false;" style="color: var(--accent-primary); text-decoration: none; margin-left: 4px;">mitre:T1190</a>  
+                            <a href="#" onclick="document.getElementById('alertSearch').value='risk:>80'; handleSearch(); return false;" style="color: var(--accent-primary); text-decoration: none; margin-left: 4px;">risk:>80</a>  
+                            <a href="#" onclick="document.getElementById('alertSearch').value='action:block'; handleSearch(); return false;" style="color: var(--accent-primary); text-decoration: none; margin-left: 4px;">action:block</a>
+                        </div>
+                    </div><!-- end search logic -->
                 </div>
-                <div class="table-responsive">
+                <div class="table-responsive" style="height: calc(100vh - 160px);">
                     {% if recent_scored_alerts %}
                     <table>
                         <thead style="position: sticky; top: 0; z-index: 10;">
@@ -854,8 +865,8 @@
                             </svg>
                         </button>
                     </div>
-                    <div class="panel-body" style="padding: 0; position: relative; z-index: 1;">
-                        <div id="threatMap" style="width: 100%; height: 100%; min-height: 250px; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;"></div>
+                    <div class="panel-body" style="padding: 0; position: relative; z-index: 1; flex-grow: 1; display: flex; flex-direction: column;">
+                        <div id="threatMap" style="flex-grow: 1; width: 100%; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;"></div>
                     </div>
                 </div>
 
@@ -876,7 +887,7 @@
                             </svg>
                         </button>
                     </div>
-                    <div class="table-responsive">
+                    <div class="table-responsive" style="height: calc(100vh - 160px);">
                         {% if recent_blocked_ips %}
                         <table>
                             <thead style="position: sticky; top: 0; z-index: 10;">
@@ -1153,12 +1164,34 @@
                 attributionControl: false,
                 zoomControl: false
             });
+            setTimeout(() => map.invalidateSize(), 500);
 
             // Dark themed tiles
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
                 subdomains: 'abcd',
                 maxZoom: 20
             }).addTo(map);
+
+            // Loop through existing scored alerts that have geo data to plot initial points
+            const existingAlerts = {{ geo_scored_alerts | tojson | safe }};
+            existingAlerts.forEach(data => {
+                if(data.lat && data.lon) {
+                    const circleColor = (data.risk_score >= 80) ? '#ef4444' : 
+                                        (data.risk_score >= 60) ? '#f97316' : 
+                                        (data.risk_score >= 30) ? '#eab308' : '#3b82f6';
+                    
+                    const marker = L.circleMarker([data.lat, data.lon], {
+                        radius: 6,
+                        fillColor: circleColor,
+                        color: '#ffffff',
+                        weight: 1,
+                        opacity: 1,
+                        fillOpacity: 0.8
+                    }).addTo(map);
+
+                    marker.bindPopup(`<strong>${data.city || 'Unknown'}, ${data.country || 'Unknown'}</strong><br/>Risk Score: ${data.risk_score}`);
+                }
+            });
             
             window.geoMap = map; // Export globally for websocket callback
 
