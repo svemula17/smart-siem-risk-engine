@@ -663,6 +663,23 @@
             </div>
         </a>
         <div style="display: flex; align-items: center; gap: 16px;">
+            <!-- API Dropdown -->
+            <div class="dropdown" style="position: relative; display: inline-block;">
+                <button class="btn-action" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; font-weight: 500;" onclick="toggleApiDropdown(event)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                    Developer API
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+                <div id="apiDropdown" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 8px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: var(--card-shadow); min-width: 180px; z-index: 1000; overflow: hidden; backdrop-filter: blur(10px);">
+                    <a href="/api-docs#health" style="display: block; padding: 10px 16px; color: var(--text-primary); text-decoration: none; font-size: 0.875rem; border-bottom: 1px solid var(--border-color);">Health Checks</a>
+                    <a href="/api-docs#alerts" style="display: block; padding: 10px 16px; color: var(--text-primary); text-decoration: none; font-size: 0.875rem; border-bottom: 1px solid var(--border-color);">Alert Endpoints</a>
+                    <a href="/api-docs#metrics" style="display: block; padding: 10px 16px; color: var(--text-primary); text-decoration: none; font-size: 0.875rem; border-bottom: 1px solid var(--border-color);">Metrics & Stats</a>
+                    <a href="/api-docs#reports" style="display: block; padding: 10px 16px; color: var(--text-primary); text-decoration: none; font-size: 0.875rem; border-bottom: 1px solid var(--border-color);">Reports Base</a>
+                    <a href="/api-docs#dashboard" style="display: block; padding: 10px 16px; color: var(--text-primary); text-decoration: none; font-size: 0.875rem; border-bottom: 1px solid var(--border-color);">Dashboard Actions</a>
+                    <a href="/api-docs#reset" style="display: block; padding: 10px 16px; color: var(--text-primary); text-decoration: none; font-size: 0.875rem;">Reset Data</a>
+                </div>
+            </div>
+
             <div class="nav-status">
                 <div class="status-dot"></div>
                 Engine Active
@@ -1291,6 +1308,21 @@
         // Interactive Playbooks (Modals & Actions)
         // --------------------------------------------------------
         
+        function toggleApiDropdown(event) {
+            if(event) event.stopPropagation();
+            const dropdown = document.getElementById('apiDropdown');
+            dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        window.addEventListener('click', function(event) {
+            if (!event.target.closest('.dropdown')) {
+                const dropdown = document.getElementById('apiDropdown');
+                if (dropdown && dropdown.style.display === 'block') {
+                    dropdown.style.display = 'none';
+                }
+            }
+        });
+
         function toggleMaximize(btn) {
             const panel = btn.closest('.panel');
             panel.classList.toggle('maximized');

@@ -15,6 +15,11 @@ router = APIRouter()
 templates = Jinja2Templates(directory=str(Path("app/templates")))
 
 
+@router.get("/api-docs", response_class=HTMLResponse)
+def api_docs(request: Request):
+    return templates.TemplateResponse("api_docs.html", {"request": request})
+
+
 @router.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request):
     db = SessionLocal()

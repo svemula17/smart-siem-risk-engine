@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart SIEM Developer API</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+        // Apply theme immediately to prevent flash
+        const savedTheme = localStorage.getItem('siem-theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    </script>
+    <style>
+        :root {
+            /* Dark Theme Colors (Default) */
+            --bg-color: #0f172a;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            
+            --accent-primary: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.4);
+            
+            --status-critical: #ef4444; /* red-500 */
+            --status-high: #f97316; /* orange-500 */
+            --status-medium: #eab308; /* yellow-500 */
+            --status-low: #22c55e; /* green-500 */
+            
+            --border-color: rgba(255, 255, 255, 0.1);
+            --card-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            --nav-bg: rgba(15, 23, 42, 0.8);
+            --card-bg: rgba(30, 41, 59, 0.6);
+            --brand-gradient: linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%);
+            
+            --table-header-bg: #1e293b; /* Solid color for sticky header */
+            --table-row-hover: rgba(255, 255, 255, 0.03);
+            --table-border: rgba(255, 255, 255, 0.05);
+
+            --ambient-gradient-1: rgba(59, 130, 246, 0.1);
+            --ambient-gradient-2: rgba(239, 68, 68, 0.05);
+            --panel-gradient: linear-gradient(180deg, rgba(30,41,59,0.7) 0%, rgba(30,41,59,0.4) 100%);
+        }
+
+        [data-theme="light"] {
+            --bg-color: #f1f5f9;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            
+            --accent-primary: #2563eb;
+            --accent-glow: rgba(37, 99, 235, 0.3);
+            
+            --status-critical: #dc2626;
+            --status-high: #ea580c;
+            --status-medium: #ca8a04;
+            --status-low: #16a34a;
+            
+            --border-color: rgba(0, 0, 0, 0.1);
+            --card-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            --nav-bg: rgba(255, 255, 255, 0.9);
+            --card-bg: rgba(255, 255, 255, 0.8);
+            --brand-gradient: linear-gradient(135deg, #0f172a 0%, #334155 100%);
+            --table-header-bg: #f8fafc; /* Solid color for sticky header */
+            --table-row-hover: rgba(0, 0, 0, 0.02);
+            --table-border: rgba(0, 0, 0, 0.06);
+
+            --ambient-gradient-1: rgba(37, 99, 235, 0.05);
+            --ambient-gradient-2: rgba(220, 38, 38, 0.03);
+            --panel-gradient: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.85) 100%);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            background-image: 
+                radial-gradient(circle at 15% 50%, var(--ambient-gradient-1) 0%, transparent 40%),
+                radial-gradient(circle at 85% 30%, var(--ambient-gradient-2) 0%, transparent 40%);
+        }
+
+        /* Top Navigation */
+        .navbar {
+            background-color: var(--nav-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 800;
+            font-size: 1.5rem;
+            letter-spacing: -0.02em;
+            background: var(--brand-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent-primary) 0%, #8b5cf6 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .nav-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.875rem;
+            color: var(--status-low);
+            background: rgba(34, 197, 94, 0.1);
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        .main-content {
+            flex-grow: 1;
+            padding: 2rem 5%;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .header-section {
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .header-section h1 {
+            font-size: 2.5rem;
+            margin: 0 0 0.5rem 0;
+            font-weight: 800;
+        }
+
+        .header-section p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            margin: 0;
+            max-width: 800px;
+        }
+
+        .api-group {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+            scroll-margin-top: 100px; /* offset for sticky header */
+        }
+
+        .api-group-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .api-group-header h2 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .api-group-header p {
+            margin: 0;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .endpoint {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .endpoint:last-child {
+            border-bottom: none;
+        }
+
+        .endpoint-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .method {
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .method.get {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .method.post {
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        .path {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .description {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin: 0;
+        }
+
+        .btn-action {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Inter', sans-serif;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-action.swagger {
+            background: rgba(34, 197, 94, 0.1);
+            border-color: #22c55e;
+            color: #22c55e;
+        }
+
+        .btn-action:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: var(--text-secondary);
+        }
+
+        [data-theme="light"] .btn-action:hover {
+            background: rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="/dashboard" style="text-decoration: none;">
+            <div class="brand">
+            <div class="brand-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+            </div>
+            Smart SIEM <span style="font-weight: 400; color: var(--text-muted);">| Developer API</span>
+            </div>
+        </a>
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <a href="/docs" target="_blank" class="btn-action swagger">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                View Swagger UI
+            </a>
+            
+            <a href="/dashboard" class="btn-action">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                Dashboard
+            </a>
+
+            <!-- Theme Toggle Button -->
+            <button id="theme-toggle" style="background: transparent; border: 1px solid var(--border-color); border-radius: 8px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-primary); transition: all 0.2s ease; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                <svg id="theme-toggle-light-icon" style="display: none;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                <svg id="theme-toggle-dark-icon" style="display: block;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            </button>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <div class="header-section">
+            <h1>REST API Reference</h1>
+            <p>Integrate the Smart SIEM Risk Engine with your existing SOC tools. The endpoints below allow you to programmatically hunt threats, manage blocklists, and extract normalized intelligence data.</p>
+        </div>
+
+        <div id="health" class="api-group">
+            <div class="api-group-header">
+                <h2>Health Checks</h2>
+                <p>Monitor the uptime and operational status of the Risk Engine.</p>
+            </div>
+            <div class="endpoint">
+                <div class="endpoint-row">
+                    <span class="method get">GET</span>
+                    <span class="path">/health</span>
+                </div>
+                <p class="description">Perform a basic heartbeat health check on the API layer.</p>
+            </div>
+        </div>
+
+        <div id="alerts" class="api-group">
+            <div class="api-group-header">
+                <h2>Alert Endpoints</h2>
+                <p>Retrieve structured and normalized network alerts processed by the platform.</p>
+            </div>
+            <div class="endpoint">
+                <div class="endpoint-row">
+                    <span class="method get">GET</span>
+                    <span class="path">/raw-alerts</span>
+                </div>
+                <p class="description">Fetch the original, unparsed JSON network logs.</p>
+            </div>
+            <div class="endpoint">
+                <div class="endpoint-row">
+                    <span class="method get">GET</span>
+                    <span class="path">/scored-alerts</span>
+                </div>
+                <p class="description">Fetch alerts after they have passed through the Heuristic and Machine Learning scoring pipeline.</p>
+            </div>
+            <div class="endpoint">
+                <div class="endpoint-row">
+                    <span class="method get">GET</span>
+                    <span class="path">/blocked-ips</span>
+                </div>
+                <p class="description">Export a JSON array of dynamically blocked IP addresses to feed into your organization's firewall automation layer.</p>
+            </div>
+        </div>
+
+        <div id="metrics" class="api-group">
+            <div class="api-group-header">
+                <h2>Metrics & Stats</h2>
+                <p>Extract statistical intelligence regarding engine performance and detection rates.</p>
+            </div>
+            <div class="endpoint">
+                <div class="endpoint-row">
+                    <span class="method get">GET</span>
+                    <span class="path">/evaluation-results</span>
+                </div>
+                <p class="description">Get detailed truth-label evaluations for the threat detection algorithms.</p>
+            </div>
+            <div class="endpoint">
+                <div class="endpoint-row">
+                    <span class="method get">GET</span>
+                    <span class="path">/metrics</span>
+                </div>
+                <p class="description">Fetch quantitative platform metrics (Total Processed, Blocked Entities, Overall Precision).</p>
+            </div>
+        </div>
+
+        <div id="reports" class="api-group">
+            <div class="api-group-header">
+                <h2>Reports Base</h2>
+                <p>Automated intelligence reports.</p>
+            </div>
+            <div class="endpoint">
+                <div class="endpoint-row">
+                    <span class="method get">GET</span>
+                    <span class="path">/reports</span>
+                </div>
+                <p class="description">Retrieve paths and metadata for all generated incident and summary reports.</p>
+            </div>
+        </div>
+
+        <div id="dashboard" class="api-group">
+            <div class="api-group-header">
+                <h2>Dashboard Actions</h2>
+                <p>The core interactive routes utilized by the SIEM UI for active threat hunting and response.</p>
+            </div>
+            <div class="endpoint">
+                <div class="endpoint-row">
+                    <span class="method get">GET</span>
+                    <span class="path">/dashboard</span>
+                </div>
+                <p class="description">Serves the main SIEM user interface HTML.</p>
+            </div>
+            <div class="endpoint">
+                <div class="endpoint-row">
+                    <span class="method post">POST</span>
+                    <span class="path">/api/hunt</span>
+                </div>
+                <p class="description">Execute a complex Threat Hunt string query (e.g. <code>mitre:T1110 risk:&gt;80 action:block</code>). Returns matching historical telemetry securely encoded.</p>
+            </div>
+            <div class="endpoint">
+                <div class="endpoint-row">
+                    <span class="method post">POST</span>
+                    <span class="path">/api/block_ip</span>
+                </div>
+                <p class="description">Manually force add a target IP Address to the global drop list.</p>
+            </div>
+            <div class="endpoint">
+                <div class="endpoint-row">
+                    <span class="method post">POST</span>
+                    <span class="path">/api/unblock_ip</span>
+                </div>
+                <p class="description">Manually remove a target IP Address from the global drop list.</p>
+            </div>
+            <div class="endpoint">
+                <div class="endpoint-row">
+                    <span class="method post">POST</span>
+                    <span class="path">/api/internal/broadcast</span>
+                </div>
+                <p class="description">Internal pipeline webhook used by <code>run.py</code> to stream massive volumes of alerts to the WebSocket hub.</p>
+            </div>
+        </div>
+
+        <div id="reset" class="api-group">
+            <div class="api-group-header">
+                <h2>Reset Data</h2>
+                <p>Administrative environment controls.</p>
+            </div>
+            <div class="endpoint">
+                <div class="endpoint-row">
+                    <span class="method post">POST</span>
+                    <span class="path">/reset</span>
+                </div>
+                <p class="description">Reset the local intelligence cache and database simulating a fresh SOC deployment.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Theme switching logic
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const lightIcon = document.getElementById('theme-toggle-light-icon');
+        const darkIcon = document.getElementById('theme-toggle-dark-icon');
+        
+        function updateThemeIcons(theme) {
+            if (theme === 'light') {
+                lightIcon.style.display = 'block';
+                darkIcon.style.display = 'none';
+            } else {
+                lightIcon.style.display = 'none';
+                darkIcon.style.display = 'block';
+            }
+        }
+        
+        // Initial setup
+        updateThemeIcons(savedTheme);
+
+        themeToggleBtn.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('siem-theme', newTheme);
+            
+            updateThemeIcons(newTheme);
+        });
+    </script>
+</body>
+</html>
