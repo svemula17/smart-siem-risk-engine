@@ -16,12 +16,12 @@ def get_severity(label):
         return 0
     return random.randint(1, 3)
 
-def process_ci_dataset(filepath, num_samples=200):
+def process_ci_dataset(filepath, num_samples=None):
     samples = []
     with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
         reader = csv.DictReader(f)
         rows = list(reader)
-        if len(rows) > num_samples:
+        if num_samples and len(rows) > num_samples:
             sampled_rows = random.sample(rows, num_samples)
         else:
             sampled_rows = rows
@@ -72,12 +72,12 @@ def process_ci_dataset(filepath, num_samples=200):
             samples.append(alert)
     return samples
 
-def process_zeek_dataset(filepath, num_samples=200):
+def process_zeek_dataset(filepath, num_samples=None):
     samples = []
     with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
         reader = csv.DictReader(f)
         rows = list(reader)
-        if len(rows) > num_samples:
+        if num_samples and len(rows) > num_samples:
             sampled_rows = random.sample(rows, num_samples)
         else:
             sampled_rows = rows
@@ -148,7 +148,7 @@ def main():
     if zeek_dir.exists():
         for csv_file in zeek_dir.glob("*.csv"):
             print(f"Processing {csv_file.name} ...")
-            alerts = process_zeek_dataset(csv_file, 200)
+            alerts = process_zeek_dataset(csv_file)
             all_alerts.extend(alerts)
             
     # CI Dataset
@@ -156,7 +156,7 @@ def main():
     if ci_dir.exists():
         for csv_file in ci_dir.glob("*.csv"):
             print(f"Processing {csv_file.name} ...")
-            alerts = process_ci_dataset(csv_file, 200)
+            alerts = process_ci_dataset(csv_file)
             all_alerts.extend(alerts)
 
     for alert in all_alerts:
