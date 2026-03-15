@@ -11,7 +11,10 @@ def load_blocklist() -> List[Dict[str, Any]]:
         return []
 
     with BLOCKLIST_FILE.open("r", encoding="utf-8") as file:
-        return json.load(file)
+        try:
+            return json.load(file)
+        except Exception:
+            return []
 
 
 def save_blocklist(entries: List[Dict[str, Any]]) -> None:

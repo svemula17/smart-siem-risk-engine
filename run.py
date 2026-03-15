@@ -30,10 +30,12 @@ def main() -> None:
     alerts = load_all_raw_alerts(RAW_ALERTS_DIR)
     evaluation_results = []
 
-    print(f"\nLoaded {len(alerts)} raw alerts\n")
+    print(f"\nStreaming raw alerts from {RAW_ALERTS_DIR}...\n")
 
+    processed_count = 0
     try:
         for alert in alerts:
+            processed_count += 1
             is_valid = validate_raw_alert(alert)
             normalized = normalize_alert(alert)
             scored = score_alert(normalized)
@@ -111,40 +113,10 @@ def main() -> None:
             except Exception as e:
                 print(f"Notification error: {e}")
 
-            print("RAW ALERT")
-            print("ID:", alert.id)
-            print("Message:", alert.message)
+            if processed_count % 5000 == 0:
+                print(f"Processed {processed_count} alerts... (Latest: {alert.id}, Score: {scored.risk_score}, Action: {scored.action_taken})")
 
-            print("\nNORMALIZED ALERT")
-            print("Source IP:", normalized.source_ip)
-            print("Category:", normalized.category)
-            print("Signature:", normalized.signature)
-            print("MITRE IDs:", normalized.mitre_ids)
-
-            print("\nSCORED ALERT")
-            print("Risk Score:", scored.risk_score)
-            print("Risk Band:", risk_band)
-            print("Recommended Action:", scored.recommended_action)
-            print("Action Taken:", scored.action_taken)
-            print("Score Reasons:")
-            for reason in scored.score_reasons:
-                print(f" - {reason}")
-
-            print("\nEVALUATION")
-            print("Ground Truth:", evaluation.ground_truth_label)
-            print("Expected Risk Band:", evaluation.expected_risk_band)
-            print("Predicted Risk Band:", evaluation.predicted_risk_band)
-            print("Band Correct:", evaluation.is_correct_band)
-            print("Expected Action:", evaluation.expected_action)
-            print("Predicted Action:", evaluation.predicted_action)
-            print("Action Correct:", evaluation.is_correct_action)
-
-            print("\nREPORT")
-            print("Incident Report Generated:", incident_report_path)
-
-            print("\nValid:", is_valid)
-            print("-" * 60)
-
+        print(f"\nFinished processing {processed_count} alerts.")
         summary = calculate_evaluation_summary(evaluation_results)
         evaluation_report_path = generate_evaluation_summary_report(
             results=evaluation_results,

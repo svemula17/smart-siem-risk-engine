@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import List
+from typing import Iterator
 
 from app.models.raw_alert import RawAlert
 
@@ -12,13 +12,13 @@ def load_raw_alert(file_path: str) -> RawAlert:
     return RawAlert(**data)
 
 
-def load_all_raw_alerts(directory: str) -> List[RawAlert]:
-    alerts = []
+def load_all_raw_alerts(directory: str) -> Iterator[RawAlert]:
     path = Path(directory)
 
-    for file_path in sorted(path.glob("*.json")):
+    for file_path in path.glob("*.json"):
         with file_path.open("r", encoding="utf-8") as file:
-            data = json.load(file)
-            alerts.append(RawAlert(**data))
-
-    return alerts
+            try:
+                data = json.load(file)
+                yield RawAlert(**data)
+            except Exception as e:
+                print(f"Skipping corrupt file {file_path.name}: {e}")
