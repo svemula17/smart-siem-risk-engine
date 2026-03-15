@@ -277,6 +277,70 @@
         [data-theme="light"] .btn-action:hover {
             background: rgba(0,0,0,0.05);
         }
+
+        /* Mobile updates */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+            .header-buttons {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+        }
+        
+        /* Search Bar */
+        .search-container {
+            margin-bottom: 2rem;
+            position: relative;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 12px 20px 12px 45px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            color: var(--text-primary);
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+        
+        /* Copy Button */
+        .btn-copy {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s;
+            margin-left: auto;
+        }
+        .btn-copy:hover {
+            color: var(--text-primary);
+            background: rgba(255,255,255,0.1);
+        }
+        [data-theme="light"] .btn-copy:hover {
+            background: rgba(0,0,0,0.05);
+        }
     </style>
 </head>
 <body>
@@ -292,7 +356,7 @@
             Smart SIEM <span style="font-weight: 400; color: var(--text-muted);">| Developer API</span>
             </div>
         </a>
-        <div style="display: flex; align-items: center; gap: 16px;">
+        <div class="header-buttons" style="display: flex; align-items: center; gap: 16px;">
             <a href="/docs" target="_blank" class="btn-action swagger">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
                 View Swagger UI
@@ -315,6 +379,11 @@
         <div class="header-section">
             <h1>REST API Reference</h1>
             <p>Integrate the Smart SIEM Risk Engine with your existing SOC tools. The endpoints below allow you to programmatically hunt threats, manage blocklists, and extract normalized intelligence data.</p>
+        </div>
+
+        <div class="search-container">
+            <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="api-search" class="search-input" placeholder="Search endpoints by path or description...">
         </div>
 
         <div id="health" class="api-group">
@@ -479,6 +548,46 @@
             
             updateThemeIcons(newTheme);
         });
+
+        // Inject copy buttons
+        document.querySelectorAll('.endpoint-row').forEach(row => {
+            const pathEl = row.querySelector('.path');
+            if (pathEl) {
+                const pathText = pathEl.textContent.trim();
+                const btn = document.createElement('button');
+                btn.className = 'btn-copy';
+                btn.title = 'Copy Path';
+                btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+                btn.onclick = () => {
+                    navigator.clipboard.writeText(pathText);
+                    const originalHTML = btn.innerHTML;
+                    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+                    setTimeout(() => btn.innerHTML = originalHTML, 2000);
+                };
+                row.appendChild(btn);
+            }
+        });
+
+        // Search functionality
+        const searchInput = document.getElementById('api-search');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase();
+                document.querySelectorAll('.api-group').forEach(group => {
+                    let hasVisible = false;
+                    group.querySelectorAll('.endpoint').forEach(el => {
+                        const text = el.textContent.toLowerCase();
+                        if (text.includes(term)) {
+                            el.style.display = 'flex';
+                            hasVisible = true;
+                        } else {
+                            el.style.display = 'none';
+                        }
+                    });
+                    group.style.display = hasVisible ? 'block' : 'none';
+                });
+            });
+        }
     </script>
 </body>
 </html>
