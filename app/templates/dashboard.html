@@ -657,6 +657,7 @@
             background: var(--bg-color);
         }
         .primary-sidebar {
+            flex-shrink: 0;
             width: 70px;
             background: var(--bg-secondary);
             border-right: 1px solid var(--border-color);
@@ -692,6 +693,7 @@
             border-radius: 0 8px 8px 0;
         }
         .secondary-sidebar {
+            flex-shrink: 0;
             width: 260px;
             background: var(--bg-color);
             border-right: 1px solid var(--border-color);
@@ -775,9 +777,9 @@
             </div>
         </a>
         <div class="top-nav-links" style="flex-grow: 1; margin-left: 3rem; margin-top: 6px;">
-            <div class="top-nav-link">Home</div>
+            <div class="top-nav-link active">Dashboard</div>
+            <div class="top-nav-link">Continuous Alerts</div>
             <div class="top-nav-link">Configurations</div>
-            <div class="top-nav-link active">Attacks & Patches</div>
             <div class="top-nav-link">Software Deployment</div>
             <div class="top-nav-link">Inventory</div>
         </div>
@@ -896,8 +898,7 @@
         </div>
 
     <!-- Top Row: Risk Analysis and Threat Feed -->
-    
-
+    <div class="top-row">
 <div class="panel threat-feed-panel" style="flex-grow: 1; overflow: hidden; display: flex; flex-direction: column;">
                 <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding: 12px 1.5rem;">
                     <div style="display:flex; justify-content:flex-start; width:100%; align-items: center;">
@@ -941,7 +942,7 @@
                         <tbody id="alertsTableBody">
                             {% for alert in recent_scored_alerts %}
                             <tr class="alert-row">
-                                <td class="mono id-cell" title="{{ alert.id }}" style="color: var(--accent-primary);">ATK-{{ alert.id[:6] }}...</td>
+                                <td class="mono id-cell" title="{{ alert.id }}" style="color: var(--accent-primary);">ATK-{{ alert.id }}</td>
                                 <td class="mono" style="color: var(--text-primary); font-size: 0.8rem;">Network Perimeter</td>
                                 <td style="color: #22c55e; font-weight: 600;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px"><polyline points="20 6 9 17 4 12"></polyline></svg> Intercepted</td>
                                 <td>
@@ -973,19 +974,33 @@
                 
                 <!-- Chart Panel -->
                 <div class="panel">
-                    <div class="panel-header">
-                        <h2 class="panel-title">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
-                                <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
-                                <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
-                            </svg>
-                            Risk Distribution
-                        </h2>
-                        <button class="maximize-btn" onclick="toggleMaximize(this)" title="Toggle Fullscreen">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
-                            </svg>
-                        </button>
+                    <div class="panel-header" style="flex-direction: column; align-items: start; gap: 10px;">
+                        <div style="display: flex; justify-content: space-between; width: 100%;">
+                            <h2 class="panel-title">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                                    <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
+                                    <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+                                </svg>
+                                Risk Distribution
+                            </h2>
+                            <button class="maximize-btn" onclick="toggleMaximize(this)" title="Toggle Fullscreen">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button class="btn-action" style="cursor: default; font-weight: 500; background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3); color: var(--accent-primary);">
+                                Attack Type: Multiple Real-time
+                            </button>
+                            <button class="btn-action" style="cursor: default; font-weight: 500; background: rgba(255, 255, 255, 0.05);">
+                                <span style="color: var(--text-secondary);">Risk Severity & Alerts:</span> 
+                                <span style="color: var(--status-low); margin-left: 4px;">Low: {{ risk_distribution.low }}</span> | 
+                                <span style="color: var(--status-medium);">Med: {{ risk_distribution.medium }}</span> | 
+                                <span style="color: var(--status-high);">High: {{ risk_distribution.high }}</span> | 
+                                <span style="color: var(--status-critical);">Critical: {{ risk_distribution.critical }}</span>
+                            </button>
+                        </div>
                     </div>
                     <div class="chart-container">
                         <canvas id="riskChart"></canvas>
@@ -1100,8 +1115,8 @@
                 </div>
 
             </div> <!-- end bottom row -->
-</div> <!-- end wrapper -->
-</div> <!-- end wrapper -->
+    </div> <!-- end soar-main-content -->
+</div> <!-- end soar-container -->
 
     <!-- Details Modal -->
     <div id="alertModal" class="modal-overlay">
