@@ -737,6 +737,18 @@
                 <div class="metric-title">Action Precision</div>
                 <div class="metric-value highlight-green">{{ action_accuracy }}%</div>
             </div>
+
+            <!-- Red Team Simulators from old UI -->
+            <div class="metric-card" style="margin-top: 1rem; border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.05);">
+                <div class="metric-title" style="color: var(--status-critical); display: flex; align-items: center; gap: 6px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                    Red-Team Simulator
+                </div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px;">Trigger live payload interceptions</div>
+                <button class="btn-action" style="width: 100%; text-align: left; margin-bottom: 6px;" onclick="fetch('/proxy-test?query=union%20select%20admin').then(r => alert('Target Hit!\nStatus: ' + r.status + ' ' + r.statusText + '\n\nIf 403 Forbidden, the proxy blocked it and broadcasted an alert to the Threat Feed!'))">💉 Inject SQLi Payload</button>
+                <button class="btn-action" style="width: 100%; text-align: left; margin-bottom: 6px;" onclick="fetch('/proxy-test?query=%3Cscript%3E').then(r => alert('Target Hit!\nStatus: ' + r.status + ' ' + r.statusText + '\n\nIf 403 Forbidden, the proxy blocked it and broadcasted an alert to the Threat Feed!'))">🐛 Inject XSS Payload</button>
+                <button class="btn-action" style="width: 100%; text-align: left;" onclick="fetch('/proxy-test', {headers:{'User-Agent':'nmap'}}).then(r => alert('Target Hit!\nStatus: ' + r.status + ' ' + r.statusText + '\n\nIf 403 Forbidden, the proxy blocked it and broadcasted an alert to the Threat Feed!'))">🔍 Simulate Nmap Scan</button>
+            </div>
         </aside>
 <div class="panel threat-feed-panel" style="flex-grow: 1; overflow: hidden; display: flex; flex-direction: column;">
                 <div class="panel-header">

@@ -18,3 +18,4 @@ websockets
 requests
 scikit-learn
 joblib
+httpx
