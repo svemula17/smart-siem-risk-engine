@@ -1,4 +1,5 @@
-from sqlalchemy import Boolean, Column, Integer, String, Text
+from sqlalchemy import Boolean, Column, Integer, String, Text, ForeignKey
+from sqlalchemy.orm import relationship
 
 from app.database import Base
 
@@ -64,3 +65,49 @@ class BlockedIPDB(Base):
     raw_alert_id = Column(String, nullable=False, index=True)
     reason = Column(String, nullable=False)
     is_simulated = Column(Boolean, nullable=False)
+
+
+class UserDB(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True, nullable=False)
+    password_hash = Column(String, nullable=False)
+    role = Column(String, nullable=False)  # Admin, Analyst, Viewer
+
+
+class IncidentDB(Base):
+    __tablename__ = "incidents"
+
+    id = Column(String, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    status = Column(String, nullable=False)  # Open, In Progress, Closed
+    severity = Column(String, nullable=False) # Low, Medium, High, Critical
+    assignee_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(String, nullable=False)
+    updated_at = Column(String, nullable=False)
+    
+    # Simple JSON array of alert IDs for now, to avoid complex associations if not strictly needed
+    # Or we can do a proper association table
+    alerts_json = Column(Text, nullable=False, default="[]")
+
+
+class IncidentTimelineDB(Base):
+    __tablename__ = "incident_timeline"
+
+    id = Column(Integer, primary_key=True, index=True)
+    incident_id = Column(String, ForeignKey("incidents.id"), index=True, nullable=False)
+    event_description = Column(Text, nullable=False)
+    created_at = Column(String, nullable=False)
+
+
+class CorrelationRuleDB(Base):
+    __tablename__ = "correlation_rules"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    logic_json = Column(Text, nullable=False)
+    severity = Column(String, nullable=False)
+    is_active = Column(Boolean, default=True)

@@ -47,6 +47,9 @@ def main() -> None:
             save_scored_alert(db, scored)
             save_evaluation_result(db, evaluation)
 
+            from app.services.correlation_engine import correlation_engine
+            correlation_engine.evaluate_alert(db, scored, normalized)
+
             evaluation_results.append(evaluation)
 
             incident_report_path = generate_incident_report(
