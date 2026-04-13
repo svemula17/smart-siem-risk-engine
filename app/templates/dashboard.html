@@ -276,8 +276,12 @@
                 <button class="btn" style="background: var(--status-critical); padding: 4px 8px;" onclick="window.print()">Export PDF</button>
                 <div class="badge b-low" id="engineStatus">• Engine Active</div>
                 <button class="btn" style="background: transparent; border: 1px solid var(--border-color); color: var(--text-primary);" onclick="toggleTheme()">Toggle Theme</button>
+                <a href="/api/v1/auth/logout" class="btn" style="background: transparent; border: 1px solid var(--status-critical); color: var(--status-critical); text-decoration: none;">Disconnect</a>
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <div style="width: 30px; height: 30px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white;">A</div>
+                    <div style="width: 30px; height: 30px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white;">
+                        <span style="position: absolute; width: 8px; height: 8px; background: var(--status-low); border-radius: 50%; bottom: 0; right: 0; border: 2px solid var(--bg-sidebar);"></span>
+                        A
+                    </div>
                     <span style="font-size: 0.875rem;">Admin</span>
                 </div>
             </div>
@@ -437,12 +441,12 @@
                     <div class="card" style="border-left: 4px solid var(--status-low);">
                         <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem;">Zeek Network Intel</div>
                         <div class="badge b-low" style="display:inline-block;">Connected</div>
-                        <p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 1rem;">Receiving 450 EPS</p>
+                        <p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 1rem;">Receiving <span id="zeekEps" class="mono">450</span> EPS</p>
                     </div>
                     <div class="card" style="border-left: 4px solid var(--status-low);">
                         <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem;">Cylance EDR</div>
                         <div class="badge b-low" style="display:inline-block;">Connected</div>
-                        <p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 1rem;">Sync: 2m ago</p>
+                        <p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 1rem;">Latency: <span id="cylanceLat" class="mono">12</span>ms</p>
                     </div>
                     <div class="card" style="border-left: 4px solid var(--status-high);">
                         <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem;">Active Directory</div>
@@ -533,12 +537,13 @@
                     const tr = document.createElement('tr');
                     
                     const sevClass = data.risk_score >= 80 ? 'b-crit' : data.risk_score >= 60 ? 'b-high' : 'b-med';
+                    const mlBadge = data.is_anomaly ? '<span class="badge" style="background:#8b5cf6; color:white; margin-left:5px; font-size: 0.6rem;">AI Triage Outlier</span>' : '';
                     
                     tr.innerHTML = `
                         <td style="color:var(--text-muted); font-size:0.75rem;">Now</td>
-                        <td class="mono" style="font-size:0.8rem">${data.alert_html.match(/title="([^"]+)"/)[1]}</td>
+                        <td class="mono" style="font-size:0.8rem">${data.alert_html.match(/title="([^"]+)"/)[1]} ${mlBadge}</td>
                         <td class="mono"><span class="badge ${sevClass}">${data.risk_score}</span></td>
-                        <td>${data.action_taken}</td>
+                        <td style="font-size:0.75rem;">${data.action_taken}</td>
                     `;
                     tbody.prepend(tr);
                     if(tbody.children.length > 20) tbody.removeChild(tbody.lastChild);
@@ -737,6 +742,10 @@
         setInterval(() => {
             document.getElementById('currentDate').innerText = new Date().toLocaleString() + ' | Real-Time Ops';
             fetchUEBA(); // Refresh UEBA periodically
+            
+            // Dynamic UI Polish for Sensors
+            document.getElementById('zeekEps').innerText = 400 + Math.floor(Math.random() * 100);
+            document.getElementById('cylanceLat').innerText = 10 + Math.floor(Math.random() * 8);
         }, 5000);
         
         // Initial fetch

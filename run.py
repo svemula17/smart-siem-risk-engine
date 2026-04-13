@@ -39,6 +39,24 @@ def main() -> None:
             is_valid = validate_raw_alert(alert)
             normalized = normalize_alert(alert)
             scored = score_alert(normalized)
+            
+            # --- ML Auto-Triage Hook ---
+            from app.services.ml_engine import ml_engine
+            if not ml_engine.is_trained:
+                ml_engine.train_on_history(db)
+            
+            is_anomaly = ml_engine.predict_anomaly(normalized, scored)
+            if is_anomaly:
+                scored.risk_score = min(100, scored.risk_score + 30)
+                # We can append this to reasons directly since it is a Pydantic model
+                scored.score_reasons.append("ML Engine Auto-Triage: Isolation Forest Anomaly Detected")
+                # Force re-evaluate action based on new boosted score
+                if scored.risk_score >= 80:
+                    scored.recommended_action = "block_and_report"
+                elif scored.risk_score >= 60:
+                    scored.recommended_action = "generate_report"
+            # ---------------------------
+
             scored = respond_to_alert(normalized, scored, db=db)
             evaluation = evaluate_alert(normalized, scored)
 
@@ -96,7 +114,8 @@ def main() -> None:
                     "lat": lat,
                     "lon": lon,
                     "country": country,
-                    "city": city
+                    "city": city,
+                    "is_anomaly": is_anomaly
                 }
                 requests.post("http://127.0.0.1:8000/api/internal/broadcast", json=payload, timeout=1)
             except requests.exceptions.RequestException:
