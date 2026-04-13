@@ -542,7 +542,7 @@
             data: {
                 labels: ['Critical', 'High', 'Medium', 'Low'],
                 datasets: [{
-                    data: [0, 0, 0, 0],
+                    data: [{{ risk_distribution.critical | default(0) }}, {{ risk_distribution.high | default(0) }}, {{ risk_distribution.medium | default(0) }}, {{ risk_distribution.low | default(0) }}],
                     backgroundColor: ['#ef4444', '#f97316', '#eab308', '#22c55e'],
                     borderWidth: 0
                 }]
