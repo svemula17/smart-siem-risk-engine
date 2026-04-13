@@ -135,6 +135,7 @@ class BroadcastData(BaseModel):
     lon: float | None = None
     country: str | None = None
     city: str | None = None
+    is_anomaly: bool = False
 
 @router.post("/api/internal/broadcast")
 async def broadcast_alert(data: dict):
