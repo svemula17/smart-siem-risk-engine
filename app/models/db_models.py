@@ -111,3 +111,15 @@ class CorrelationRuleDB(Base):
     logic_json = Column(Text, nullable=False)
     severity = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
+
+
+class IPEntityProfileDB(Base):
+    __tablename__ = "ip_entity_profiles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ip_address = Column(String, unique=True, index=True, nullable=False)
+    total_alerts_seen = Column(Integer, default=0, nullable=False)
+    cumulative_risk_score = Column(Integer, default=0, nullable=False)
+    risk_level = Column(String, default="Low", nullable=False) # Low, Medium, High, Critical
+    created_at = Column(String, nullable=False)
+    updated_at = Column(String, nullable=False)

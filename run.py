@@ -50,6 +50,9 @@ def main() -> None:
             from app.services.correlation_engine import correlation_engine
             correlation_engine.evaluate_alert(db, scored, normalized)
 
+            from app.services.ueba_engine import ueba_engine
+            ueba_engine.update_profile(db, scored, normalized)
+
             evaluation_results.append(evaluation)
 
             incident_report_path = generate_incident_report(

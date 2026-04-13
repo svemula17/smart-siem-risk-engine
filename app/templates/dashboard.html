@@ -313,7 +313,7 @@
                     </div>
                 </div>
 
-                <div class="grid-2">
+                <div class="grid-3" style="margin-bottom: 2rem; display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
                     <div class="card">
                         <h3>Live Threat Feed</h3>
                         <div style="max-height: 400px; overflow-y: auto;">
@@ -324,9 +324,21 @@
                         </div>
                     </div>
                     <div class="card">
-                        <h3>Geographic Context</h3>
-                        <div id="threatMap" style="height: 400px; background: #333; border-radius: 8px;"></div>
+                        <h3>UEBA: Riskiest Entities</h3>
+                        <div style="max-height: 400px; overflow-y: auto;">
+                            <table>
+                                <thead><tr><th>Entity IP</th><th>Risk Score</th><th>Level</th></tr></thead>
+                                <tbody id="uebaTableBody">
+                                    <tr><td colspan="3" style="text-align:center;">Loading UEBA data...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
+                </div>
+
+                <div class="card">
+                    <h3>Geographic Context</h3>
+                    <div id="threatMap" style="height: 400px; background: #333; border-radius: 8px;"></div>
                 </div>
             </div>
 
@@ -655,15 +667,39 @@
             } catch(e) { console.error(e); }
         }
 
+        async function fetchUEBA() {
+            try {
+                const res = await fetch('/api/v1/ueba/top-risky');
+                const data = await res.json();
+                const tbody = document.getElementById('uebaTableBody');
+                tbody.innerHTML = '';
+                
+                data.forEach(entity => {
+                    const tr = document.createElement('tr');
+                    const sevClass = entity.risk_level === 'Critical' ? 'b-crit' : 
+                                     entity.risk_level === 'High' ? 'b-high' : 
+                                     entity.risk_level === 'Medium' ? 'b-med' : 'b-low';
+                    tr.innerHTML = `
+                        <td class="mono" style="font-weight:600;">${entity.ip_address}</td>
+                        <td class="mono">${entity.cumulative_risk_score}</td>
+                        <td><span class="badge ${sevClass}">${entity.risk_level}</span></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch(e) { console.error(e); }
+        }
+
         // Init
         connectWS();
         setInterval(() => {
             document.getElementById('currentDate').innerText = new Date().toLocaleString() + ' | Real-Time Ops';
-        }, 1000);
+            fetchUEBA(); // Refresh UEBA periodically
+        }, 5000);
         
         // Initial fetch
         fetchIncidents();
         fetchRules();
+        fetchUEBA();
         
         document.getElementById('stat-alerts').innerText = "5000+";
         document.getElementById('stat-blocks').innerText = "12";
