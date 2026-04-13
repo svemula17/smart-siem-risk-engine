@@ -298,6 +298,21 @@
                     </div>
                 </div>
 
+                <div class="grid-2" style="margin-bottom: 2rem;">
+                    <div class="card" style="height: 300px;">
+                        <h3>Alert Volume (Real-Time)</h3>
+                        <div style="height: 220px;">
+                            <canvas id="alertVolumeChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="card" style="height: 300px;">
+                        <h3>Risk Level Distribution</h3>
+                        <div style="height: 220px;">
+                            <canvas id="riskDistChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="grid-2">
                     <div class="card">
                         <h3>Live Threat Feed</h3>
@@ -476,11 +491,81 @@
                     // Increment stats
                     const aCount = document.getElementById('stat-alerts');
                     aCount.innerText = parseInt(aCount.innerText || 0) + 1;
+
+                    // Update Charts
+                    currentTickAlerts++;
+                    
+                    let riskIdx = 3; // Low
+                    if (data.risk_score >= 80) riskIdx = 0; // Critical
+                    else if (data.risk_score >= 60) riskIdx = 1; // High
+                    else if (data.risk_score >= 40) riskIdx = 2; // Medium
+                    
+                    riskDistChart.data.datasets[0].data[riskIdx]++;
+                    riskDistChart.update();
                 }
             };
             ws.onclose = () => setTimeout(connectWS, 2000);
         }
         
+        // Chart Init
+        Chart.defaults.color = '#a1a1aa';
+        Chart.defaults.borderColor = '#3f3f46';
+        
+        const volumeCtx = document.getElementById('alertVolumeChart').getContext('2d');
+        const alertVolumeChart = new Chart(volumeCtx, {
+            type: 'line',
+            data: {
+                labels: Array(20).fill(''),
+                datasets: [{
+                    label: 'Alerts per tick',
+                    data: Array(20).fill(0),
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, suggestedMax: 5 },
+                    x: { display: false }
+                },
+                animation: { duration: 0 }
+            }
+        });
+
+        const distCtx = document.getElementById('riskDistChart').getContext('2d');
+        const riskDistChart = new Chart(distCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Critical', 'High', 'Medium', 'Low'],
+                datasets: [{
+                    data: [0, 0, 0, 0],
+                    backgroundColor: ['#ef4444', '#f97316', '#eab308', '#22c55e'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: { position: 'right' }
+                }
+            }
+        });
+
+        let currentTickAlerts = 0;
+        setInterval(() => {
+            // Update Volume Chart
+            alertVolumeChart.data.datasets[0].data.shift();
+            alertVolumeChart.data.datasets[0].data.push(currentTickAlerts);
+            alertVolumeChart.update();
+            currentTickAlerts = 0;
+        }, 1000);
+
         // Map Init
         const map = L.map('threatMap', { center: [20,0], zoom: 1, zoomControl: false });
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
