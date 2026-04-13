@@ -123,3 +123,14 @@ class IPEntityProfileDB(Base):
     risk_level = Column(String, default="Low", nullable=False) # Low, Medium, High, Critical
     created_at = Column(String, nullable=False)
     updated_at = Column(String, nullable=False)
+
+
+class PlaybookDB(Base):
+    __tablename__ = "playbooks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False, unique=True)
+    description = Column(Text, nullable=True)
+    trigger_condition_json = Column(Text, nullable=False) # e.g. {"severity": "Critical", "event_type": "brute_force"}
+    actions_json = Column(Text, nullable=False) # e.g. [{"type": "block_ip"}, {"type": "notify", "channel": "discord"}]
+    is_active = Column(Boolean, default=True)

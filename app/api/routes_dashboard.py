@@ -258,6 +258,57 @@ def hunt_threats(hunt: HuntQuery):
                 "message": raw.message
             })
 
-        return {"status": "success", "results": formatted_results}
+        # Build timeline histogram
+        from collections import defaultdict
+        timeline = defaultdict(int)
+        for r in formatted_results:
+            try:
+                # Group by minute for a clean chart
+                minute = str(r["timestamp"])[:16] # e.g. "2026-04-13T22:08"
+                timeline[minute] += 1
+            except:
+                pass
+        
+        timeline_sorted = [{"time": k, "count": v} for k, v in sorted(timeline.items())]
+
+        return {"status": "success", "results": formatted_results, "timeline": timeline_sorted}
+    finally:
+        db.close()
+
+
+@router.get("/api/v1/graph-data")
+def get_attack_graph_data():
+    from app.models.db_models import NormalizedAlertDB, ScoredAlertDB
+    from app.database import SessionLocal
+    from sqlalchemy import desc
+    
+    db = SessionLocal()
+    try:
+        # Fetch most recent critical/high alerts to make the graph interesting
+        query = db.query(NormalizedAlertDB, ScoredAlertDB).join(ScoredAlertDB, NormalizedAlertDB.raw_alert_id == ScoredAlertDB.raw_alert_id).filter(NormalizedAlertDB.source_ip.isnot(None)).order_by(desc(ScoredAlertDB.id)).limit(100).all()
+        
+        nodes = []
+        edges = []
+        
+        # Central target node
+        nodes.append({"data": {"id": "INTERNAL_NET", "label": "Internal Net", "type": "target"}})
+        
+        seen_ips = set()
+        seen_edges = set()
+        
+        for norm, scored in query:
+            ip = norm.source_ip
+            if ip not in seen_ips:
+                # Color code based on risk
+                risk_class = "attacker-critical" if scored.risk_score >= 80 else "attacker-high" if scored.risk_score >= 60 else "attacker"
+                nodes.append({"data": {"id": ip, "label": ip, "type": risk_class}})
+                seen_ips.add(ip)
+            
+            edge_id = f"{ip}-{norm.event_type}"
+            if edge_id not in seen_edges:
+                edges.append({"data": {"id": edge_id, "source": ip, "target": "INTERNAL_NET", "label": norm.event_type}})
+                seen_edges.add(edge_id)
+                
+        return {"nodes": nodes, "edges": edges}
     finally:
         db.close()

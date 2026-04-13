@@ -8,7 +8,17 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
     <style>
+        @media print {
+            .sidebar { display: none !important; }
+            .topbar { display: none !important; }
+            * { color: black !important; background: white !important; }
+            .card { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; margin-bottom: 20px; }
+            .main-container { overflow: visible !important; height: auto !important; }
+            body { height: auto !important; overflow: visible !important; }
+            canvas { filter: invert(100%); }
+        }
         :root {
             /* Enterprise Dark Theme */
             --bg-base: #09090b;
@@ -263,6 +273,7 @@
         <div class="topbar">
             <div style="font-weight: 600; font-size: 1.1rem;" id="currentDate">Real-Time Operations</div>
             <div style="display: flex; gap: 1rem; align-items: center;">
+                <button class="btn" style="background: var(--status-critical); padding: 4px 8px;" onclick="window.print()">Export PDF</button>
                 <div class="badge b-low" id="engineStatus">• Engine Active</div>
                 <button class="btn" style="background: transparent; border: 1px solid var(--border-color); color: var(--text-primary);" onclick="toggleTheme()">Toggle Theme</button>
                 <div style="display: flex; align-items: center; gap: 8px;">
@@ -337,8 +348,15 @@
                 </div>
 
                 <div class="card">
-                    <h3>Geographic Context</h3>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                        <h3 style="margin: 0;">Context Topology</h3>
+                        <div>
+                            <button class="btn" onclick="toggleView('map')" id="btn-map">Geo Map</button>
+                            <button class="btn" style="background: transparent; border: 1px solid var(--accent); color: var(--accent);" onclick="toggleView('graph')" id="btn-graph">Attack Graph</button>
+                        </div>
+                    </div>
                     <div id="threatMap" style="height: 400px; background: #333; border-radius: 8px;"></div>
+                    <div id="cyGraph" style="height: 400px; background: #18181b; border-radius: 8px; display: none;"></div>
                 </div>
             </div>
 
@@ -389,13 +407,26 @@
             <div id="tab-hunting" class="tab-content">
                 <h2 style="margin-top:0;">Threat Hunting Engine</h2>
                 <div class="card">
-                    <p style="color: var(--text-secondary); margin-top:0;">Use KQL-like syntax for historical querying.</p>
-                    <input type="text" class="search-bar" style="font-family: monospace;" placeholder="mitre_tactic == 'T1110' and risk_score > 80">
-                    <button class="btn">Execute Query</button>
+                    <p style="color: var(--text-secondary); margin-top:0;">Use parsed syntax for historical querying.</p>
+                    <input type="text" id="huntQuery" class="search-bar" style="font-family: monospace;" placeholder="mitre:T1110 risk:>80">
+                    <button class="btn" onclick="executeHunt()">Execute Query</button>
                 </div>
-                <div class="card" style="margin-top: 1rem;">
-                    <h3>Query Results</h3>
-                    <p style="color: var(--text-muted);">Execute a query to see historical data.</p>
+                <div class="grid-2" style="margin-top: 1rem;">
+                    <div class="card">
+                        <h3>Event Timeline</h3>
+                        <div style="height: 200px;">
+                            <canvas id="huntTimelineChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="card" style="max-height: 300px; overflow-y: auto;">
+                        <h3>Query Results</h3>
+                        <table style="width: 100%;">
+                            <thead><tr><th>ID</th><th>Time</th><th>Risk</th><th>Action</th></tr></thead>
+                            <tbody id="huntResultsTable">
+                                <tr><td colspan="4" style="text-align:center; color: var(--text-muted);">Execute a query</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -424,9 +455,21 @@
             <!-- Settings Tab -->
             <div id="tab-settings" class="tab-content">
                 <h2 style="margin-top:0;">Platform Settings</h2>
-                <div class="card">
-                    <h3>Correlation Engine Rules</h3>
-                    <div id="rulesList">Loading rules...</div>
+                <div class="grid-2">
+                    <div class="card">
+                        <h3>Correlation Engine Rules</h3>
+                        <div id="rulesList" style="max-height: 400px; overflow-y: auto;">Loading rules...</div>
+                    </div>
+                    <div class="card">
+                        <h3>New Custom Rule Builder</h3>
+                        <p style="color:var(--text-secondary); font-size:0.875rem;">Define real-time SOAR playbook logic.</p>
+                        <input type="text" id="ruleName" class="search-bar" placeholder="Rule Name (e.g. Brute Force Playbook)">
+                        <textarea id="ruleLogic" class="search-bar" style="height: 150px; font-family: monospace;" placeholder='{"type":"mitre_tactic", "mitre_id":"T1110", "min_risk":80}'></textarea>
+                        <select id="ruleSeverity" class="search-bar">
+                            <option value="Critical">Critical</option><option value="High">High</option>
+                        </select>
+                        <button class="btn" onclick="saveRule()">Save & Deploy Rule</button>
+                    </div>
                 </div>
             </div>
 
@@ -703,6 +746,79 @@
         
         document.getElementById('stat-alerts').innerText = "5000+";
         document.getElementById('stat-blocks').innerText = "12";
+
+        // Scripts for Mega Tools
+        let cy;
+        function initGraph(data) {
+            cy = cytoscape({
+                container: document.getElementById('cyGraph'),
+                elements: [...data.nodes, ...data.edges],
+                style: [
+                    { selector: 'node', style: { 'label': 'data(label)', 'color': '#fff', 'text-valign': 'top', 'width': 30, 'height': 30 } },
+                    { selector: 'node[type="target"]', style: { 'background-color': '#3b82f6', 'shape': 'hexagon', 'width': 50, 'height': 50 } },
+                    { selector: 'node[type="attacker-critical"]', style: { 'background-color': '#ef4444' } },
+                    { selector: 'node[type="attacker-high"]', style: { 'background-color': '#f97316' } },
+                    { selector: 'node[type="attacker"]', style: { 'background-color': '#eab308' } },
+                    { selector: 'edge', style: { 'label': 'data(label)', 'color': '#a1a1aa', 'font-size': '10px', 'width': 2, 'line-color': '#3f3f46', 'target-arrow-color': '#3f3f46', 'target-arrow-shape': 'triangle', 'curve-style': 'bezier' } }
+                ],
+                layout: { name: 'concentric', spacingFactor: 1.2 }
+            });
+        }
+        
+        async function loadGraph() {
+            try {
+                let res = await fetch('/api/v1/graph-data');
+                let data = await res.json();
+                if(!cy) initGraph(data);
+            } catch(e) {}
+        }
+        
+        function toggleView(view) {
+            document.getElementById('threatMap').style.display = view === 'map' ? 'block' : 'none';
+            document.getElementById('cyGraph').style.display = view === 'graph' ? 'block' : 'none';
+            document.getElementById('btn-map').style.background = view === 'map' ? 'var(--accent)' : 'transparent';
+            document.getElementById('btn-map').style.color = view === 'map' ? 'white' : 'var(--accent)';
+            document.getElementById('btn-graph').style.background = view === 'graph' ? 'var(--accent)' : 'transparent';
+            document.getElementById('btn-graph').style.color = view === 'graph' ? 'white' : 'var(--accent)';
+            if(view === 'graph') { loadGraph(); }
+            if(view === 'map') { map.invalidateSize(); }
+        }
+
+        let huntChart;
+        async function executeHunt() {
+            let query = document.getElementById('huntQuery').value;
+            try {
+                let res = await fetch('/api/hunt', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({query: query})});
+                let data = await res.json();
+                
+                let tbody = document.getElementById('huntResultsTable');
+                tbody.innerHTML = '';
+                data.results.forEach(r => {
+                    tbody.innerHTML += `<tr><td class="mono">${r.alert_id.substring(0,6)}...</td><td style="font-size: 0.75rem;">${String(r.timestamp).substring(11,19)}</td><td>${r.risk_score}</td><td style="font-size: 0.75rem;">${r.action}</td></tr>`;
+                });
+                if(data.results.length === 0) tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">No results found.</td></tr>`;
+                
+                const timelineCtx = document.getElementById('huntTimelineChart').getContext('2d');
+                if(huntChart) huntChart.destroy();
+                huntChart = new Chart(timelineCtx, {
+                    type: 'bar',
+                    data: { labels: data.timeline.map(t=>t.time), datasets: [{ label: 'Events', data: data.timeline.map(t=>t.count), backgroundColor: '#3b82f6' }] },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            } catch(e) { console.error(e); }
+        }
+
+        async function saveRule() {
+            let name = document.getElementById('ruleName').value;
+            let logic = document.getElementById('ruleLogic').value;
+            let sev = document.getElementById('ruleSeverity').value;
+            
+            try {
+                await fetch(`/api/v1/rules/?name=${encodeURIComponent(name)}&logic_json=${encodeURIComponent(logic)}&severity=${encodeURIComponent(sev)}`, { method: 'POST' });
+                alert("Rule Saved and Deployed to Correlation Engine!");
+                fetchRules();
+            } catch(e) { alert("Failed to save."); }
+        }
     </script>
 </body>
 </html>
