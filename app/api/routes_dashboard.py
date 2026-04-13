@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect, HTTPException
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from sqlalchemy import desc
@@ -22,6 +22,10 @@ def api_docs(request: Request):
 
 @router.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request):
+    token = request.cookies.get("session_token")
+    if not token or not token.startswith("authenticated_"):
+        return RedirectResponse(url="/login")
+        
     db = SessionLocal()
     try:
         raw_alerts = db.query(RawAlertDB).order_by(desc(RawAlertDB.created_at)).all()
