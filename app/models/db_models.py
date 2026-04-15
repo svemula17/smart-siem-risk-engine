@@ -148,3 +148,78 @@ class SuppressedAlertDB(Base):
     source_ip = Column(String, nullable=True)
     suppressed_at = Column(String, nullable=False)
     reason = Column(String, nullable=False, default="duplicate_within_window")
+
+
+class AuditLogDB(Base):
+    """Immutable audit trail of all analyst and system actions."""
+    __tablename__ = "audit_log"
+
+    id = Column(Integer, primary_key=True, index=True)
+    actor = Column(String, nullable=False)          # username or "system"
+    action = Column(String, nullable=False)          # e.g. "block_ip", "resolve_incident"
+    target = Column(String, nullable=True)           # e.g. IP address, incident ID
+    detail = Column(Text, nullable=True)             # JSON or free-text detail
+    result = Column(String, nullable=False, default="success")  # success / failure
+    created_at = Column(String, nullable=False)
+
+
+class IOCDB(Base):
+    """Indicators of Compromise — IPs, domains, hashes, URLs."""
+    __tablename__ = "ioc"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ioc_type = Column(String, nullable=False)        # ip, domain, hash, url
+    value = Column(String, nullable=False, index=True)
+    severity = Column(String, nullable=False, default="High")   # Low/Medium/High/Critical
+    source = Column(String, nullable=True)           # e.g. "AbuseIPDB", "Manual"
+    description = Column(Text, nullable=True)
+    tags_json = Column(Text, nullable=True)          # JSON list of tags
+    is_active = Column(Boolean, default=True)
+    created_at = Column(String, nullable=False)
+    expires_at = Column(String, nullable=True)
+
+
+class AlertGroupDB(Base):
+    """Groups related alerts into episodes/campaigns."""
+    __tablename__ = "alert_groups"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    attack_type = Column(String, nullable=True)
+    source_ip = Column(String, nullable=True)
+    alert_count = Column(Integer, default=1)
+    max_risk_score = Column(Integer, default=0)
+    avg_risk_score = Column(Float, default=0.0)
+    status = Column(String, nullable=False, default="open")   # open / acknowledged / resolved
+    alert_ids_json = Column(Text, nullable=False, default="[]")
+    first_seen = Column(String, nullable=False)
+    last_seen = Column(String, nullable=False)
+
+
+class FalsePositiveDB(Base):
+    """Analyst FP feedback for ML model retraining."""
+    __tablename__ = "false_positives"
+
+    id = Column(Integer, primary_key=True, index=True)
+    raw_alert_id = Column(String, nullable=False, index=True)
+    analyst = Column(String, nullable=False)
+    reason = Column(Text, nullable=True)
+    original_risk_score = Column(Integer, nullable=True)
+    original_attack_type = Column(String, nullable=True)
+    marked_at = Column(String, nullable=False)
+
+
+class SuppressionRuleDB(Base):
+    """Analyst-defined alert suppression rules."""
+    __tablename__ = "suppression_rules"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    attack_type = Column(String, nullable=True)      # suppress this attack type
+    source_ip = Column(String, nullable=True)        # suppress from this IP
+    max_risk_score = Column(Integer, nullable=True)  # only suppress if risk <= this
+    window_minutes = Column(Integer, default=60)     # suppress for this many minutes
+    is_active = Column(Boolean, default=True)
+    created_by = Column(String, nullable=False, default="admin")
+    created_at = Column(String, nullable=False)
+    expires_at = Column(String, nullable=True)
