@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from sqlalchemy import desc
 
 from app.database import SessionLocal
-from app.models.db_models import BlockedIPDB, RawAlertDB, ScoredAlertDB
+from app.models.db_models import BlockedIPDB, NormalizedAlertDB, RawAlertDB, ScoredAlertDB
 
 router = APIRouter()
 
@@ -32,17 +32,25 @@ def get_raw_alerts() -> list[dict]:
 def get_scored_alerts() -> list[dict]:
     db = SessionLocal()
     try:
-        alerts = db.query(ScoredAlertDB).order_by(desc(ScoredAlertDB.id)).all()
+        rows = (
+            db.query(ScoredAlertDB, NormalizedAlertDB)
+            .outerjoin(NormalizedAlertDB, ScoredAlertDB.raw_alert_id == NormalizedAlertDB.raw_alert_id)
+            .order_by(desc(ScoredAlertDB.id))
+            .limit(500)
+            .all()
+        )
         return [
             {
-                "id": alert.id,
-                "raw_alert_id": alert.raw_alert_id,
-                "risk_score": alert.risk_score,
-                "recommended_action": alert.recommended_action,
-                "action_taken": alert.action_taken,
-                "processed_at": alert.processed_at,
+                "id": scored.id,
+                "raw_alert_id": scored.raw_alert_id,
+                "risk_score": scored.risk_score,
+                "recommended_action": scored.recommended_action,
+                "action_taken": scored.action_taken,
+                "processed_at": scored.processed_at,
+                "attack_type": norm.attack_type if norm else "Unknown Threat",
+                "source_ip": norm.source_ip if norm else None,
             }
-            for alert in alerts
+            for scored, norm in rows
         ]
     finally:
         db.close()

@@ -12,12 +12,25 @@ from app.api.routes_auth import router as auth_router
 from app.api.routes_ueba import router as ueba_router
 
 from app.database import Base, engine
+from sqlalchemy import text
 
 app = FastAPI(title="Smart SIEM Risk Engine API", version="1.0.0")
 
 
 def init_db() -> None:
+    # Create any new tables (e.g. suppressed_alerts)
     Base.metadata.create_all(bind=engine)
+
+    # Safe column migrations for existing tables
+    with engine.connect() as conn:
+        # Add attack_type to normalized_alerts if not present
+        try:
+            conn.execute(text(
+                "ALTER TABLE normalized_alerts ADD COLUMN attack_type VARCHAR DEFAULT 'Unknown Threat'"
+            ))
+            conn.commit()
+        except Exception:
+            pass  # Column already exists
 
 
 init_db()

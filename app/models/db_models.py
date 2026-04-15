@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, Integer, String, Text, ForeignKey
+from sqlalchemy import Boolean, Column, Float, Integer, String, Text, ForeignKey
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -28,6 +28,7 @@ class NormalizedAlertDB(Base):
     raw_severity = Column(Integer, nullable=False)
     signature = Column(String, nullable=True)
     mitre_ids_json = Column(Text, nullable=False)
+    attack_type = Column(String, nullable=True, default="Unknown Threat")
     normalized_payload_json = Column(Text, nullable=False)
 
 
@@ -134,3 +135,16 @@ class PlaybookDB(Base):
     trigger_condition_json = Column(Text, nullable=False) # e.g. {"severity": "Critical", "event_type": "brute_force"}
     actions_json = Column(Text, nullable=False) # e.g. [{"type": "block_ip"}, {"type": "notify", "channel": "discord"}]
     is_active = Column(Boolean, default=True)
+
+
+class SuppressedAlertDB(Base):
+    """Tracks deduplicated / suppressed alerts for alert fatigue metrics."""
+    __tablename__ = "suppressed_alerts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    fingerprint = Column(String, nullable=False, index=True)
+    raw_alert_id = Column(String, nullable=False)
+    attack_type = Column(String, nullable=True)
+    source_ip = Column(String, nullable=True)
+    suppressed_at = Column(String, nullable=False)
+    reason = Column(String, nullable=False, default="duplicate_within_window")

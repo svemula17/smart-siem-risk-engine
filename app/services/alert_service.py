@@ -37,6 +37,7 @@ def save_normalized_alert(db: Session, normalized_alert: NormalizedAlert) -> Non
         raw_severity=normalized_alert.raw_severity,
         signature=normalized_alert.signature,
         mitre_ids_json=to_json(normalized_alert.mitre_ids),
+        attack_type=normalized_alert.attack_type,
         normalized_payload_json=to_json(normalized_alert.model_dump()),
     )
     db.add(db_record)

@@ -21,4 +21,5 @@ class NormalizedAlert(BaseModel):
     signature_id: Optional[str] = None
     mitre_ids: List[str] = []
     threat_indicator_type: Optional[str] = None
+    attack_type: str = "Unknown Threat"
     ground_truth_label: str

@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 from app.models.raw_alert import RawAlert
+from app.normalization.attack_type_classifier import classify_attack_type
 
 
 def extract_source_ip(raw_alert: RawAlert) -> Optional[str]:
@@ -51,3 +52,11 @@ def extract_threat_indicator_type(raw_alert: RawAlert) -> Optional[str]:
         return indicators[0].type
 
     return None
+
+
+def extract_attack_type(raw_alert: RawAlert) -> str:
+    """Classify the attack type using MITRE IDs, category, and message."""
+    mitre_ids = extract_mitre_ids(raw_alert)
+    category = extract_category(raw_alert)
+    message = raw_alert.message or ""
+    return classify_attack_type(mitre_ids, category, message)
