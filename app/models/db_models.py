@@ -42,6 +42,7 @@ class ScoredAlertDB(Base):
     recommended_action = Column(String, nullable=False)
     action_taken = Column(String, nullable=False)
     processed_at = Column(String, nullable=False)
+    is_anomaly = Column(Boolean, default=False, nullable=False)
 
 
 class EvaluationResultDB(Base):
@@ -223,3 +224,32 @@ class SuppressionRuleDB(Base):
     created_by = Column(String, nullable=False, default="admin")
     created_at = Column(String, nullable=False)
     expires_at = Column(String, nullable=True)
+
+
+class PlaybookExecutionDB(Base):
+    """Log of every playbook action triggered by the pipeline."""
+    __tablename__ = "playbook_executions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    playbook_id = Column(Integer, ForeignKey("playbooks.id"), nullable=True, index=True)
+    playbook_name = Column(String, nullable=False)
+    raw_alert_id = Column(String, nullable=True)
+    action_type = Column(String, nullable=False)     # block_ip, notify, escalate, etc.
+    target = Column(String, nullable=True)           # IP address or channel
+    success = Column(Boolean, nullable=False, default=True)
+    error_detail = Column(Text, nullable=True)
+    executed_at = Column(String, nullable=False)
+
+
+class MLModelMetaDB(Base):
+    """Persists ML model training metadata across restarts."""
+    __tablename__ = "ml_model_meta"
+
+    id = Column(Integer, primary_key=True, index=True)
+    model_name = Column(String, nullable=False, default="isolation_forest")
+    is_trained = Column(Boolean, default=False)
+    training_samples = Column(Integer, default=0)
+    contamination = Column(Float, default=0.01)
+    fp_count_used = Column(Integer, default=0)
+    last_trained_at = Column(String, nullable=True)
+    accuracy_estimate = Column(Float, nullable=True)

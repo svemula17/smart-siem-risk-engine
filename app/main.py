@@ -18,10 +18,14 @@ from app.api.routes_auth import router as auth_router
 from app.api.routes_suppression import router as suppression_router
 from app.api.routes_ueba import router as ueba_router
 from app.api.routes_webhook import router as webhook_router
+from app.api.routes_ml import router as ml_router
+from app.api.routes_forecast import router as forecast_router
+from app.api.routes_playbooks import router as playbooks_router
+from app.api.routes_network import router as network_router
 
 from app.database import Base, engine
 
-app = FastAPI(title="Smart SIEM Risk Engine API", version="2.0.0")
+app = FastAPI(title="Smart SIEM Risk Engine API", version="3.0.0")
 
 
 def init_db() -> None:
@@ -31,6 +35,7 @@ def init_db() -> None:
     # Safe column migrations for existing tables
     migrations = [
         "ALTER TABLE normalized_alerts ADD COLUMN attack_type VARCHAR DEFAULT 'Unknown Threat'",
+        "ALTER TABLE scored_alerts ADD COLUMN is_anomaly BOOLEAN DEFAULT 0",
     ]
     with engine.connect() as conn:
         for sql in migrations:
@@ -61,7 +66,7 @@ app.include_router(incidents_router,   tags=["Incidents"])
 app.include_router(rules_router,       tags=["Rules"])
 app.include_router(ueba_router,        tags=["UEBA"])
 
-# New features
+# Intelligence & Analytics
 app.include_router(ai_router,          tags=["AI"])
 app.include_router(audit_router,       tags=["Audit"])
 app.include_router(compliance_router,  tags=["Compliance"])
@@ -69,3 +74,9 @@ app.include_router(export_router,      tags=["Export"])
 app.include_router(ioc_router,         tags=["IOC"])
 app.include_router(suppression_router, tags=["Suppression"])
 app.include_router(webhook_router,     tags=["Webhook"])
+
+# New v3 features
+app.include_router(ml_router,          tags=["ML"])
+app.include_router(forecast_router,    tags=["Forecast"])
+app.include_router(playbooks_router,   tags=["Playbooks"])
+app.include_router(network_router,     tags=["Network"])
