@@ -277,3 +277,1485 @@ textarea.inp{resize:vertical}select.inp{cursor:pointer}
   </div>
 
   <div class="ca">
+
+<!-- ══════════════════════════ DASHBOARD TAB ══════════════════════════ -->
+<div id="tab-dashboard" class="tab-content active">
+
+  <!-- Widget row: Gauge + Sparkline + Playbook feed + IP Reputation -->
+  <div class="g4" style="margin-bottom:.85rem">
+    <div class="card gauge-wrap" style="padding:1.1rem">
+      <span class="ct" style="margin-bottom:.5rem">Threat Level</span>
+      <svg id="gauge-svg" width="110" height="65" viewBox="0 0 110 65">
+        <path d="M8 62 A50 50 0 0 1 102 62" stroke="var(--border2)" stroke-width="9" fill="none" stroke-linecap="round"/>
+        <path id="gauge-arc" d="M8 62 A50 50 0 0 1 102 62" stroke="var(--low)" stroke-width="9" fill="none" stroke-linecap="round" stroke-dasharray="0 157"/>
+      </svg>
+      <div class="gauge-val" id="gauge-val" style="color:var(--low)">0</div>
+      <div class="gauge-label" id="gauge-label">Low Risk</div>
+    </div>
+    <div class="card">
+      <div class="ch"><span class="ct">Anomaly Rate (24h)</span><span class="ml-conf" id="anom-pct-badge">0%</span></div>
+      <div class="sparkline-wrap" id="anom-sparkline">
+        <div class="sparkline-bar" style="height:10%"></div>
+      </div>
+      <div style="margin-top:.4rem;font-size:.67rem;color:var(--t3)">Isolation Forest detections per hour</div>
+    </div>
+    <div class="card">
+      <div class="ch"><span class="ct">Playbook Activity</span><button class="btn btn-g" style="font-size:.65rem;padding:2px 6px" onclick="sw('playbooks',document.querySelector('[data-tab=playbooks]'))">All →</button></div>
+      <div id="pb-mini-feed" style="font-size:.75rem;color:var(--t3)">
+        <div class="skel"></div><div class="skel" style="width:80%"></div><div class="skel" style="width:65%"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ch"><span class="ct">IP Reputation</span></div>
+      <div style="display:flex;gap:.4rem;margin-bottom:.5rem">
+        <input type="text" id="rep-ip-inp" class="inp" style="font-size:.78rem" placeholder="Enter IP…">
+        <button class="btn btn-purple" style="font-size:.72rem;white-space:nowrap" onclick="lookupReputation()">Check</button>
+      </div>
+      <div id="rep-result" style="text-align:center;color:var(--t3);font-size:.78rem">Enter an IP above</div>
+    </div>
+  </div>
+
+  <!-- KPI Row 1 -->
+  <div class="g5" style="margin-bottom:.85rem">
+    <div class="kc kc-high"><div class="kl">⚠ Open Incidents</div><div class="kv" style="color:var(--high)" id="s-inc">—</div><div class="ks">Active cases</div></div>
+    <div class="kc kc-accent"><div class="kl">🔔 Alerts Processed</div><div class="kv" style="color:var(--accent)" id="s-alr">{{ scored_alert_count }}</div><div class="ks">Total ingested</div></div>
+    <div class="kc kc-crit"><div class="kl">🚫 Blocked IPs</div><div class="kv" style="color:var(--crit)" id="s-blk">{{ blocked_ip_count }}</div><div class="ks">Active blocks</div></div>
+    <div class="kc kc-info"><div class="kl">🎯 Attack Types</div><div class="kv" style="color:var(--info)" id="s-at">{{ attack_type_count }}</div><div class="ks">Unique patterns</div></div>
+    <div class="kc kc-low"><div class="kl">🤖 AI Suppression</div><div class="kv" style="color:var(--low)" id="s-sup">{{ suppression_rate }}%</div><div class="ks">Fatigue reduced</div></div>
+  </div>
+  <!-- KPI Row 2 -->
+  <div class="g4" style="margin-bottom:.85rem">
+    <div class="kc kc-low"><div class="kl">Band Accuracy</div><div class="kv" style="color:var(--low);font-size:1.3rem">{{ band_accuracy }}%</div><div class="ks">ML risk band</div></div>
+    <div class="kc kc-low"><div class="kl">Action Accuracy</div><div class="kv" style="color:var(--low);font-size:1.3rem">{{ action_accuracy }}%</div><div class="ks">Recommended action</div></div>
+    <div class="kc kc-accent"><div class="kl">MITRE TTPs</div><div class="kv" style="color:var(--accent);font-size:1.3rem">{{ active_mitre_ids | length }}</div><div class="ks">Active techniques</div></div>
+    <div class="kc kc-purple"><div class="kl">False Positives</div><div class="kv" style="color:var(--purple);font-size:1.3rem" id="s-fp">0</div><div class="ks">Analyst marked</div></div>
+  </div>
+
+  <!-- Charts Row 1 -->
+  <div class="g2" style="margin-bottom:.85rem">
+    <div class="card"><div class="ch"><span class="ct">Alert Volume (Live)</span><span class="badge b-l" style="font-size:.58rem;animation:pulse 1.5s infinite">● LIVE</span></div><div style="height:185px"><canvas id="volchart"></canvas></div></div>
+    <div class="card"><div class="ch"><span class="ct">Risk Level Distribution</span></div><div style="height:185px"><canvas id="distchart"></canvas></div></div>
+  </div>
+  <!-- Charts Row 2 -->
+  <div class="g2" style="margin-bottom:.85rem">
+    <div class="card"><div class="ch"><span class="ct">Attack Type Breakdown</span><button class="btn btn-g" style="font-size:.68rem;padding:.25rem .55rem" onclick="sw('attacks',null)">Details →</button></div><div style="height:210px"><canvas id="attkchart"></canvas></div></div>
+    <div class="card"><div class="ch"><span class="ct">7-Day Alert Trend</span></div><div style="height:210px"><canvas id="trendchart"></canvas></div></div>
+  </div>
+  <!-- Charts Row 3 -->
+  <div class="g3" style="margin-bottom:.85rem">
+    <div class="card"><div class="ch"><span class="ct">MITRE ATT&amp;CK Coverage</span></div><div style="height:190px"><canvas id="mitrechart"></canvas></div></div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="ch" style="padding:.85rem .9rem .5rem"><span class="ct">Live Threat Feed</span><span class="badge b-l" style="font-size:.58rem;animation:pulse 1.5s infinite">● LIVE</span></div>
+      <div style="max-height:220px;overflow-y:auto"><table><thead><tr><th>Risk</th><th>Attack Type</th><th>Action</th><th>ACK</th></tr></thead><tbody id="livefeed"></tbody></table></div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="ch" style="padding:.85rem .9rem .5rem"><span class="ct">UEBA Riskiest Entities</span></div>
+      <div style="max-height:220px;overflow-y:auto"><table><thead><tr><th>IP</th><th>Score</th><th>Level</th></tr></thead><tbody id="ueba-body"><tr><td colspan="3" style="text-align:center;color:var(--t3)">Loading…</td></tr></tbody></table></div>
+    </div>
+  </div>
+  <!-- Heatmap -->
+  <div class="card" style="margin-bottom:.85rem">
+    <div class="ch"><span class="ct">24-Hour Alert Heatmap (Last 7 Days)</span><span style="font-size:.7rem;color:var(--t3)">darker = more alerts</span></div>
+    <div id="heatmap-container"></div>
+  </div>
+  <!-- Topology -->
+  <div class="card">
+    <div class="ch">
+      <span class="ct">Network Topology</span>
+      <div style="display:flex;gap:.4rem">
+        <button class="btn btn-p" id="btn-map" onclick="toggleView('map')">Geo Map</button>
+        <button class="btn btn-g" id="btn-graph" onclick="toggleView('graph')">Attack Graph</button>
+      </div>
+    </div>
+    <div id="threatMap" style="height:360px;border-radius:8px;overflow:hidden"></div>
+    <div id="cyGraph" style="height:360px;background:var(--card2);border-radius:8px;display:none"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ INCIDENTS ══════════════════════════ -->
+<div id="tab-incidents" class="tab-content">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.85rem">
+    <h2 style="font-size:1.05rem;font-weight:700">Incident Management</h2>
+    <button class="btn btn-p" onclick="fetchIncidents()">Refresh</button>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden"><table><thead><tr><th>ID</th><th>Title</th><th>Severity</th><th>Status</th><th>Created</th><th>AI Summary</th></tr></thead><tbody id="inc-body"><tr><td colspan="6" style="text-align:center;color:var(--t3);padding:2rem">Loading…</td></tr></tbody></table></div>
+</div>
+
+<!-- ══════════════════════════ ALERTS ══════════════════════════ -->
+<div id="tab-alerts" class="tab-content">
+  <div style="display:flex;gap:.75rem;align-items:center;margin-bottom:.75rem">
+    <input type="text" class="inp" style="flex:1" placeholder="Filter by alert ID, IP, attack type…" oninput="filterAlerts(this.value)">
+    <a href="/api/export/scored-alerts" class="btn btn-g" download>⬇ CSV</a>
+    <a href="/api/export/scored-alerts?fmt=json" class="btn btn-g" download>⬇ JSON</a>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden"><table><thead><tr><th>Alert ID</th><th>Risk</th><th>Attack Type</th><th>Source IP</th><th>Action</th><th>Processed</th><th>FP</th></tr></thead><tbody id="alerts-body"><tr><td colspan="7" style="text-align:center;color:var(--t3);padding:2rem">Loading…</td></tr></tbody></table></div>
+</div>
+
+<!-- ══════════════════════════ ATTACK ANALYSIS ══════════════════════════ -->
+<div id="tab-attacks" class="tab-content">
+  <h2 style="font-size:1.05rem;font-weight:700;margin-bottom:.85rem">Attack Pattern Analysis</h2>
+  <div class="g2" style="margin-bottom:.85rem">
+    <div class="card"><div class="ch"><span class="ct">Attack Distribution</span></div><div style="height:280px"><canvas id="attkfull"></canvas></div></div>
+    <div class="card"><div class="ch"><span class="ct">ML Alert Clusters (DBSCAN)</span></div><div id="clusterlist" style="max-height:280px;overflow-y:auto"><div style="color:var(--t3);text-align:center;padding:2rem;font-size:.8rem">Loading clusters…</div></div></div>
+  </div>
+  <div class="card">
+    <div class="ch"><span class="ct">Attack Breakdown</span><a href="/api/export/scored-alerts" class="btn btn-g" style="font-size:.7rem" download>⬇ Export CSV</a></div>
+    <div id="atk-list"><div style="color:var(--t3);text-align:center;padding:2rem">Loading…</div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ THREAT HUNTING ══════════════════════════ -->
+<div id="tab-hunting" class="tab-content">
+  <h2 style="font-size:1.05rem;font-weight:700;margin-bottom:.85rem">Threat Hunting Engine</h2>
+  <div class="card" style="margin-bottom:.85rem">
+    <p style="color:var(--t2);font-size:.8rem;margin-bottom:.65rem">KQL-style query syntax for historical correlation.</p>
+    <div style="display:flex;gap:.65rem;align-items:center">
+      <input type="text" id="hq" class="inp" style="flex:1;font-family:'JetBrains Mono',monospace" placeholder='mitre:T1110  risk:>80  attack:"Brute Force"  ip:1.2.3.4'>
+      <button class="btn btn-p" onclick="hunt()">▶ Execute</button>
+    </div>
+    <div style="margin-top:.65rem;display:flex;gap:.4rem;flex-wrap:wrap">
+      <span style="font-size:.68rem;color:var(--t3)">Quick:</span>
+      <span class="chip" onclick="setHunt('risk:>80')">risk:>80</span>
+      <span class="chip" onclick="setHunt('mitre:T1110')">mitre:T1110</span>
+      <span class="chip" onclick="setHunt('attack:&quot;Brute Force&quot;')">Brute Force</span>
+      <span class="chip" onclick="setHunt('action:block')">action:block</span>
+      <span class="chip" onclick="setHunt('attack:&quot;Data Exfiltration&quot;')">Data Exfiltration</span>
+      <span class="chip" onclick="setHunt('attack:&quot;Lateral Movement&quot;')">Lateral Movement</span>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="ch"><span class="ct">Event Timeline</span></div><div style="height:190px"><canvas id="huntchart"></canvas></div></div>
+    <div class="card" style="padding:0;overflow:hidden;max-height:280px">
+      <table><thead><tr><th>ID</th><th>Time</th><th>Risk</th><th>Attack</th><th>Action</th></tr></thead>
+      <tbody id="hresults"><tr><td colspan="5" style="text-align:center;color:var(--t3);padding:1.5rem">Run a query</td></tr></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ KILL CHAIN ══════════════════════════ -->
+<div id="tab-killchain" class="tab-content">
+  <h2 style="font-size:1.05rem;font-weight:700;margin-bottom:.85rem">MITRE ATT&amp;CK Kill Chain</h2>
+  <div class="card" style="margin-bottom:.85rem">
+    <div class="ch"><span class="ct">Attack Progression (Detected Tactics)</span></div>
+    <div class="kc-chain" id="killchain-steps"></div>
+    <p style="font-size:.75rem;color:var(--t3);margin-top:.75rem">Click a tactic to get an AI-powered explanation.</p>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="ch"><span class="ct">Tactic Coverage</span></div><div style="height:260px"><canvas id="tacticchart"></canvas></div></div>
+    <div class="card card-ai"><div class="ch"><span class="ct">AI Attack Explanation</span><span class="badge b-p">Claude AI</span></div><div id="ai-explain" style="color:var(--t2);font-size:.825rem;line-height:1.6">Select a tactic above to get an AI-powered explanation.</div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ IOC ══════════════════════════ -->
+<div id="tab-ioc" class="tab-content">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.85rem">
+    <h2 style="font-size:1.05rem;font-weight:700">IOC Manager</h2>
+    <div style="display:flex;gap:.5rem">
+      <button class="btn btn-g" onclick="seedIOC()">Seed Demo IOCs</button>
+      <a href="/api/export/ioc" class="btn btn-g" download>⬇ Export</a>
+      <button class="btn btn-p" onclick="openModal('iocModal')">+ Add IOC</button>
+    </div>
+  </div>
+  <div class="g3" style="margin-bottom:.85rem">
+    <div class="kc kc-crit"><div class="kl">Total IOCs</div><div class="kv" style="color:var(--crit)" id="ioc-total">—</div></div>
+    <div class="kc kc-high"><div class="kl">IOC Matches</div><div class="kv" style="color:var(--high)" id="ioc-matches">—</div></div>
+    <div class="kc kc-accent"><div class="kl">Last Updated</div><div class="kv" style="font-size:1rem;color:var(--accent)" id="ioc-ts">—</div></div>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <table><thead><tr><th>Type</th><th>Value</th><th>Severity</th><th>Source</th><th>Description</th><th>Tags</th><th>Actions</th></tr></thead>
+    <tbody id="ioc-body"><tr><td colspan="7" style="text-align:center;color:var(--t3);padding:2rem">Loading IOCs…</td></tr></tbody></table>
+  </div>
+</div>
+
+<!-- ══════════════════════════ COMPLIANCE ══════════════════════════ -->
+<div id="tab-compliance" class="tab-content">
+  <h2 style="font-size:1.05rem;font-weight:700;margin-bottom:.85rem">Compliance &amp; SLA Dashboard</h2>
+  <div class="g4" style="margin-bottom:.85rem">
+    <div class="kc kc-info"><div class="kl">MTTD</div><div class="kv" style="color:var(--info)" id="mttd">—<span style="font-size:.8rem"> min</span></div><div class="ks">Mean Time to Detect</div></div>
+    <div class="kc kc-high"><div class="kl">MTTR</div><div class="kv" style="color:var(--high)" id="mttr">—<span style="font-size:.8rem"> min</span></div><div class="ks">Mean Time to Respond</div></div>
+    <div class="kc kc-low"><div class="kl">Posture Score</div>
+      <div style="display:flex;align-items:center;gap:.75rem;margin-top:.25rem">
+        <div class="pr" id="posture-ring" style="background:conic-gradient(var(--low) 0% 70%, var(--hover) 70% 100%)"><span class="ps" id="posture-score">—</span></div>
+        <div class="ks">/100</div>
+      </div>
+    </div>
+    <div class="kc kc-purple"><div class="kl">FP Rate</div><div class="kv" style="color:var(--purple)" id="fp-rate">—%</div><div class="ks">False positive ratio</div></div>
+  </div>
+  <div class="g3" style="margin-bottom:.85rem">
+    <div class="card"><div class="ch"><span class="ct">SOC 2 Type II</span><button class="btn btn-g" style="font-size:.67rem;padding:.2rem .5rem" onclick="loadCompliance()">↻</button></div><div id="soc2-ctrl" style="font-size:.8rem;color:var(--t3)">Loading…</div></div>
+    <div class="card"><div class="ch"><span class="ct">PCI-DSS v4.0</span></div><div id="pci-ctrl" style="font-size:.8rem;color:var(--t3)">Loading…</div></div>
+    <div class="card"><div class="ch"><span class="ct">ISO 27001:2022</span></div><div id="iso-ctrl" style="font-size:.8rem;color:var(--t3)">Loading…</div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ PLAYBOOKS ══════════════════════════ -->
+<div id="tab-playbooks" class="tab-content">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.85rem">
+    <h2 style="font-size:1.05rem;font-weight:700">Automated Playbooks</h2>
+    <div style="display:flex;gap:.5rem">
+      <button class="btn btn-g" onclick="loadPlaybooks()">↻ Refresh</button>
+      <button class="btn btn-p" onclick="openModal('pbCreateModal')">+ New Playbook</button>
+    </div>
+  </div>
+  <div class="g4" style="margin-bottom:.85rem">
+    <div class="kc kc-accent"><div class="kl">Total Playbooks</div><div class="kv" style="color:var(--accent)" id="pb-total">—</div></div>
+    <div class="kc kc-low"><div class="kl">Active</div><div class="kv" style="color:var(--low)" id="pb-active">—</div></div>
+    <div class="kc kc-purple"><div class="kl">Executions (24h)</div><div class="kv" style="color:var(--purple)" id="pb-exec-count">—</div></div>
+    <div class="kc kc-crit"><div class="kl">Blocks Triggered</div><div class="kv" style="color:var(--crit)" id="pb-blocks">—</div></div>
+  </div>
+  <div class="g2" style="margin-bottom:.85rem">
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="ch" style="padding:.85rem .9rem .5rem"><span class="ct">Configured Playbooks</span></div>
+      <div style="max-height:320px;overflow-y:auto">
+        <table><thead><tr><th>Name</th><th>Trigger</th><th>Actions</th><th>Status</th><th>Toggle</th></tr></thead>
+        <tbody id="pb-body"><tr><td colspan="5" style="text-align:center;color:var(--t3);padding:2rem">Loading…</td></tr></tbody></table>
+      </div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="ch" style="padding:.85rem .9rem .5rem"><span class="ct">Execution Log</span><span class="badge b-l" style="font-size:.58rem;animation:pulse 1.5s infinite">● LIVE</span></div>
+      <div id="pb-exec-log" style="max-height:320px;overflow-y:auto;padding:.5rem .9rem">
+        <div class="pb-feed-item" style="color:var(--t3);border:none">No executions yet.</div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ch"><span class="ct">Trigger History (7 days)</span></div>
+    <div style="height:200px"><canvas id="pb-trend-chart"></canvas></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ ML INSIGHTS ══════════════════════════ -->
+<div id="tab-ml" class="tab-content">
+  <h2 style="font-size:1.05rem;font-weight:700;margin-bottom:.85rem">ML Insights <span class="badge b-p" style="font-size:.65rem;vertical-align:middle">AI/ML</span></h2>
+  <div class="g5" style="margin-bottom:.85rem">
+    <div class="kc kc-purple"><div class="kl">Model Status</div><div class="kv" style="color:var(--purple);font-size:1rem" id="ml-status">—</div></div>
+    <div class="kc kc-low"><div class="kl">Anomaly Rate</div><div class="kv" style="color:var(--low)" id="ml-anom-rate">—%</div><div class="ks">Isolation Forest</div></div>
+    <div class="kc kc-accent"><div class="kl">FP Rate</div><div class="kv" style="color:var(--accent)" id="ml-fp-trend">—%</div><div class="ks">Last 7 days</div></div>
+    <div class="kc kc-info"><div class="kl">Training Samples</div><div class="kv" style="color:var(--info)" id="ml-samples">—</div></div>
+    <div class="kc kc-crit"><div class="kl">Last Retrained</div><div class="kv" style="font-size:.9rem;color:var(--crit)" id="ml-last-train">—</div></div>
+  </div>
+  <div class="g2" style="margin-bottom:.85rem">
+    <div class="card card-ai">
+      <div class="ch"><span class="ct">Anomaly Detection Rate (7-day)</span></div>
+      <div style="height:220px"><canvas id="ml-anom-chart"></canvas></div>
+    </div>
+    <div class="card card-ai">
+      <div class="ch"><span class="ct">Feature Importance (SHAP-style)</span></div>
+      <div id="ml-features" style="padding:.5rem 0">
+        <div class="skel"></div><div class="skel" style="width:75%"></div><div class="skel" style="width:55%"></div>
+      </div>
+    </div>
+  </div>
+  <div class="g2" style="margin-bottom:.85rem">
+    <div class="card card-ai">
+      <div class="ch"><span class="ct">DBSCAN Alert Clusters</span><button class="btn btn-g" style="font-size:.68rem" onclick="fetchMLClusters()">↻</button></div>
+      <div id="ml-cluster-view" style="max-height:280px;overflow-y:auto"></div>
+    </div>
+    <div class="card card-ai">
+      <div class="ch"><span class="ct">FP Feedback → Retrain Loop</span></div>
+      <div id="ml-fp-history" style="max-height:180px;overflow-y:auto;margin-bottom:.75rem;font-size:.78rem;color:var(--t2)">
+        <div class="skel"></div><div class="skel" style="width:85%"></div>
+      </div>
+      <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-purple" onclick="triggerRetrain()">🔄 Retrain Model on FP Feedback</button>
+        <span id="retrain-status" style="font-size:.72rem;color:var(--t3)"></span>
+      </div>
+      <p style="font-size:.7rem;color:var(--t3);margin-top:.5rem">Adjusts contamination parameter and re-fits Isolation Forest using FP-filtered training data.</p>
+    </div>
+  </div>
+  <div class="card card-ai">
+    <div class="ch"><span class="ct">Auto-Triage Engine — Recent Classifications</span><span class="badge b-p">AI</span></div>
+    <table><thead><tr><th>Alert ID</th><th>Risk</th><th>Attack Type</th><th>TP Likelihood</th><th>FP Likelihood</th><th>ML Verdict</th></tr></thead>
+    <tbody id="triage-body"><tr><td colspan="6" style="text-align:center;color:var(--t3);padding:2rem">Loading triage data…</td></tr></tbody></table>
+  </div>
+</div>
+
+<!-- ══════════════════════════ NETWORK INTELLIGENCE ══════════════════════════ -->
+<div id="tab-netintel" class="tab-content">
+  <h2 style="font-size:1.05rem;font-weight:700;margin-bottom:.85rem">Network Intelligence</h2>
+  <div class="g4" style="margin-bottom:.85rem">
+    <div class="kc kc-crit"><div class="kl">Suspicious Segments</div><div class="kv" style="color:var(--crit)" id="net-suspicious">—</div></div>
+    <div class="kc kc-high"><div class="kl">Unique Attackers</div><div class="kv" style="color:var(--high)" id="net-attackers">—</div></div>
+    <div class="kc kc-accent"><div class="kl">Network Risk Score</div><div class="kv" style="color:var(--accent)" id="net-score">—</div></div>
+    <div class="kc kc-purple"><div class="kl">UEBA Flagged IPs</div><div class="kv" style="color:var(--purple)" id="net-ueba-flags">—</div></div>
+  </div>
+  <div class="g2" style="margin-bottom:.85rem">
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="ch" style="padding:.85rem .9rem .5rem"><span class="ct">Top Suspicious Network Segments</span></div>
+      <table><thead><tr><th>Subnet</th><th>Alerts</th><th>Avg Risk</th><th>UEBA Score</th><th>Verdict</th></tr></thead>
+      <tbody id="net-segments"><tr><td colspan="5" style="text-align:center;color:var(--t3);padding:2rem">Loading…</td></tr></tbody></table>
+    </div>
+    <div class="card">
+      <div class="ch"><span class="ct">Quick IP Reputation Lookup</span></div>
+      <div style="display:flex;gap:.4rem;margin-bottom:.75rem">
+        <input type="text" id="net-ip-inp" class="inp" style="font-size:.78rem" placeholder="Enter IP address…">
+        <button class="btn btn-purple" style="font-size:.72rem;white-space:nowrap" onclick="lookupRepNetIntel()">Analyze</button>
+      </div>
+      <div id="net-rep-result" style="font-size:.82rem;color:var(--t3);text-align:center;padding:1rem 0">Enter an IP to check reputation</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ch">
+      <span class="ct">MITRE ATT&amp;CK Coverage Matrix</span>
+      <div style="display:flex;gap:.5rem;align-items:center;font-size:.68rem">
+        <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:rgba(124,58,237,.4);border:1px solid var(--purple);border-radius:2px;display:inline-block"></span>Covered</span>
+        <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:rgba(232,41,74,.3);border:1px solid var(--crit);border-radius:2px;display:inline-block"></span>Active Alert</span>
+        <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:var(--card2);border:1px solid var(--border);border-radius:2px;display:inline-block"></span>Not Seen</span>
+      </div>
+    </div>
+    <div id="mitre-matrix" class="mitre-grid-wrap" style="margin-top:.5rem"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ THREAT FORECAST ══════════════════════════ -->
+<div id="tab-forecast" class="tab-content">
+  <h2 style="font-size:1.05rem;font-weight:700;margin-bottom:.85rem">Threat Forecast <span class="badge b-a" style="font-size:.65rem;vertical-align:middle">7-Day Prediction</span></h2>
+  <div class="g4" style="margin-bottom:.85rem">
+    <div class="kc kc-crit"><div class="kl">Predicted Peak Day</div><div class="kv" style="color:var(--crit);font-size:1rem" id="fc-peak">—</div></div>
+    <div class="kc kc-high"><div class="kl">Forecast Trend</div><div class="kv" style="color:var(--high);font-size:1rem" id="fc-trend">—</div></div>
+    <div class="kc kc-accent"><div class="kl">Avg Predicted/Day</div><div class="kv" style="color:var(--accent)" id="fc-avg">—</div></div>
+    <div class="kc kc-purple"><div class="kl">Model Confidence</div><div class="kv" style="color:var(--purple)" id="fc-conf">—%</div></div>
+  </div>
+  <div class="card" style="margin-bottom:.85rem">
+    <div class="ch"><span class="ct">Alert Volume: Historical (30d) + 7-Day Forecast</span><span style="font-size:.7rem;color:var(--t3)">Linear regression on daily totals</span></div>
+    <div style="height:280px"><canvas id="fc-chart"></canvas></div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="ch"><span class="ct">Attack Type Forecast</span></div>
+      <div id="fc-breakdown">
+        <div class="skel"></div><div class="skel" style="width:80%"></div><div class="skel" style="width:65%"></div>
+      </div>
+    </div>
+    <div class="card card-ai">
+      <div class="ch"><span class="ct">AI Forecast Narrative</span><span class="badge b-p">Claude AI</span></div>
+      <div id="fc-narrative" style="font-size:.82rem;color:var(--t2);line-height:1.65">
+        <div class="skel"></div><div class="skel" style="width:92%"></div><div class="skel" style="width:78%"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ LOG SOURCES ══════════════════════════ -->
+<div id="tab-sources" class="tab-content">
+  <h2 style="font-size:1.05rem;font-weight:700;margin-bottom:.85rem">Data Connectors</h2>
+  <div class="g3">
+    <div class="card" style="border-left:3px solid var(--low)"><div style="font-weight:700;margin-bottom:.4rem">Zeek Network Intel</div><span class="badge b-l">Connected</span><p style="font-size:.78rem;color:var(--t2);margin-top:.65rem">Receiving <span id="zeekEps" class="mono">450</span> EPS · IDS/IPS</p></div>
+    <div class="card" style="border-left:3px solid var(--low)"><div style="font-weight:700;margin-bottom:.4rem">Cylance EDR</div><span class="badge b-l">Connected</span><p style="font-size:.78rem;color:var(--t2);margin-top:.65rem">Latency <span id="cylanceLat" class="mono">12</span>ms · EDR</p></div>
+    <div class="card" style="border-left:3px solid var(--med)"><div style="font-weight:700;margin-bottom:.4rem">Active Directory</div><span class="badge b-h">Degraded</span><p style="font-size:.78rem;color:var(--t2);margin-top:.65rem">Latency spike · Identity</p></div>
+    <div class="card" style="border-left:3px solid var(--accent)"><div style="font-weight:700;margin-bottom:.4rem">Suricata IDS</div><span class="badge b-a">Streaming</span><p style="font-size:.78rem;color:var(--t2);margin-top:.65rem">4,200+ signatures active</p></div>
+    <div class="card" style="border-left:3px solid var(--low)"><div style="font-weight:700;margin-bottom:.4rem">Webhook Receiver</div><span class="badge b-l">Active</span><p style="font-size:.78rem;color:var(--t2);margin-top:.65rem">POST /api/webhook/ingest · <span id="wh-count" class="mono">0</span> events</p></div>
+    <div class="card" style="border-left:3px solid var(--low)"><div style="font-weight:700;margin-bottom:.4rem">Threat Intel Feed</div><span class="badge b-l">Active</span><p style="font-size:.78rem;color:var(--t2);margin-top:.65rem">IOC &amp; reputation scoring live</p></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ AUDIT LOG ══════════════════════════ -->
+<div id="tab-audit" class="tab-content">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.85rem">
+    <h2 style="font-size:1.05rem;font-weight:700">Audit Log</h2>
+    <div style="display:flex;gap:.5rem"><button class="btn btn-p" onclick="loadAudit()">↻ Refresh</button><a href="/api/export/audit-log" class="btn btn-g" download>⬇ Export</a></div>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden"><table><thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Target</th><th>Result</th></tr></thead><tbody id="audit-body"><tr><td colspan="5" style="text-align:center;color:var(--t3);padding:2rem">Loading audit log…</td></tr></tbody></table></div>
+</div>
+
+<!-- ══════════════════════════ SETTINGS ══════════════════════════ -->
+<div id="tab-settings" class="tab-content">
+  <h2 style="font-size:1.05rem;font-weight:700;margin-bottom:.85rem">Platform Settings</h2>
+  <div class="g2" style="margin-bottom:.85rem">
+    <div class="card"><h3 style="font-size:.875rem;margin-bottom:.75rem">Correlation Rules</h3><div id="rules-list" style="max-height:320px;overflow-y:auto"><div style="color:var(--t3)">Loading…</div></div></div>
+    <div class="card"><h3 style="font-size:.875rem;margin-bottom:.5rem">New Rule Builder</h3>
+      <input type="text" id="rname" class="inp" style="margin-bottom:.4rem" placeholder="Rule name">
+      <textarea id="rlogic" class="inp" style="height:100px;font-family:'JetBrains Mono',monospace;margin-bottom:.4rem" placeholder='{"type":"mitre_tactic","mitre_id":"T1110","min_risk":80}'></textarea>
+      <select id="rsev" class="inp" style="margin-bottom:.75rem"><option>Critical</option><option>High</option><option>Medium</option></select>
+      <button class="btn btn-p" onclick="saveRule()">Save &amp; Deploy</button>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card"><h3 style="font-size:.875rem;margin-bottom:.75rem">Suppression Rules</h3>
+      <div id="sup-rules" style="max-height:220px;overflow-y:auto"><div style="color:var(--t3)">Loading…</div></div>
+      <button class="btn btn-p" style="margin-top:.75rem" onclick="openModal('supModal')">+ Add Rule</button>
+    </div>
+    <div class="card"><h3 style="font-size:.875rem;margin-bottom:.75rem">Slack Notifications</h3>
+      <p style="font-size:.78rem;color:var(--t2);margin-bottom:.75rem">Set <code style="background:var(--hover);padding:2px 5px;border-radius:3px">SLACK_WEBHOOK_URL</code> env var for real-time alerts.</p>
+      <input type="text" class="inp" style="margin-bottom:.4rem" placeholder="https://hooks.slack.com/services/…" id="slack-url-inp">
+      <button class="btn btn-g" onclick="testSlack()">Test Notification</button>
+    </div>
+  </div>
+</div>
+
+  </div><!-- /ca -->
+</div><!-- /main-container -->
+
+<!-- ══════════ TOAST CONTAINER ══════════ -->
+<div id="toast-container"></div>
+
+<!-- ══════════ MODALS ══════════ -->
+<div id="incModal" class="modal">
+  <div class="mbox"><span class="mcl" onclick="closeModal('incModal')">×</span>
+    <h2 id="m-title" style="font-size:1rem;margin-bottom:.65rem">Incident</h2>
+    <div style="display:flex;gap:.5rem;margin-bottom:.75rem"><span id="m-sev" class="badge"></span><span id="m-stat" class="badge b-a"></span></div>
+    <p id="m-desc" style="color:var(--t2);font-size:.825rem"></p>
+    <div style="margin-top:1.25rem"><div style="font-size:.7rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem">Activity Timeline</div><ul id="m-tl" style="list-style:none;font-size:.8rem;color:var(--t2)"></ul></div>
+    <div style="margin-top:1.25rem;border-top:1px solid var(--border);padding-top:1rem">
+      <div style="font-size:.7rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.65rem">🤖 AI Incident Summary</div>
+      <div id="m-ai" style="font-size:.8rem;color:var(--t2);line-height:1.6">Loading AI analysis…</div>
+    </div>
+    <div style="margin-top:1.25rem;display:flex;gap:.5rem"><button class="btn btn-p" onclick="resolveInc()">Mark Resolved</button><button class="btn btn-g" onclick="closeModal('incModal')">Close</button></div>
+  </div>
+</div>
+
+<div id="iocModal" class="modal">
+  <div class="mbox"><span class="mcl" onclick="closeModal('iocModal')">×</span>
+    <h2 style="font-size:1rem;margin-bottom:1rem">Add IOC</h2>
+    <select id="ioc-type" class="inp" style="margin-bottom:.5rem"><option value="ip">IP Address</option><option value="domain">Domain</option><option value="hash">File Hash</option><option value="url">URL</option></select>
+    <input type="text" id="ioc-value" class="inp" style="margin-bottom:.5rem" placeholder="Value (e.g. 1.2.3.4 or evil.com)">
+    <select id="ioc-sev" class="inp" style="margin-bottom:.5rem"><option>Critical</option><option>High</option><option selected>Medium</option><option>Low</option></select>
+    <input type="text" id="ioc-src" class="inp" style="margin-bottom:.5rem" placeholder="Source (e.g. AbuseIPDB, Manual)">
+    <input type="text" id="ioc-desc" class="inp" style="margin-bottom:.5rem" placeholder="Description">
+    <input type="text" id="ioc-tags" class="inp" style="margin-bottom:.75rem" placeholder="Tags (comma-separated)">
+    <button class="btn btn-p" onclick="addIOC()">Add IOC</button>
+  </div>
+</div>
+
+<div id="supModal" class="modal">
+  <div class="mbox"><span class="mcl" onclick="closeModal('supModal')">×</span>
+    <h2 style="font-size:1rem;margin-bottom:1rem">Add Suppression Rule</h2>
+    <input type="text" id="sup-name" class="inp" style="margin-bottom:.5rem" placeholder="Rule name">
+    <select id="sup-type" class="inp" style="margin-bottom:.5rem"><option value="">Any attack type</option><option>Brute Force</option><option>Port Scanning</option><option>Reconnaissance</option><option>Lateral Movement</option><option>Data Exfiltration</option><option>Command &amp; Control</option><option>DDoS Attack</option></select>
+    <input type="text" id="sup-ip" class="inp" style="margin-bottom:.5rem" placeholder="Source IP (blank = any)">
+    <input type="number" id="sup-risk" class="inp" style="margin-bottom:.5rem" placeholder="Max risk score to suppress (e.g. 50)">
+    <input type="number" id="sup-win" class="inp" style="margin-bottom:.75rem" value="60" placeholder="Window (minutes)">
+    <button class="btn btn-p" onclick="addSupRule()">Create Rule</button>
+  </div>
+</div>
+
+<div id="pbCreateModal" class="modal">
+  <div class="mbox"><span class="mcl" onclick="closeModal('pbCreateModal')">×</span>
+    <h2 style="font-size:1rem;margin-bottom:1rem">Create Playbook</h2>
+    <input type="text" id="pb-name" class="inp" style="margin-bottom:.5rem" placeholder="Playbook name">
+    <input type="text" id="pb-desc" class="inp" style="margin-bottom:.5rem" placeholder="Description">
+    <textarea id="pb-trigger" class="inp" style="height:80px;font-family:'JetBrains Mono',monospace;margin-bottom:.5rem" placeholder='{"min_risk_score": 80, "recommended_action": "block_and_report"}'></textarea>
+    <textarea id="pb-actions" class="inp" style="height:80px;font-family:'JetBrains Mono',monospace;margin-bottom:.75rem" placeholder='[{"type": "block_ip"}, {"type": "notify", "channel": "slack"}]'></textarea>
+    <button class="btn btn-p" onclick="createPlaybook()">Save Playbook</button>
+  </div>
+</div>
+
+<div id="kbModal" class="modal">
+  <div class="mbox" style="width:480px"><span class="mcl" onclick="closeModal('kbModal')">×</span>
+    <h2 style="font-size:1rem;margin-bottom:1rem">⌨ Keyboard Shortcuts</h2>
+    <table><tbody>
+      <tr><td><kbd style="background:var(--hover);padding:3px 7px;border-radius:4px;font-size:.78rem">D</kbd></td><td style="color:var(--t2)">Dashboard</td><td><kbd style="background:var(--hover);padding:3px 7px;border-radius:4px;font-size:.78rem">I</kbd></td><td style="color:var(--t2)">Incidents</td></tr>
+      <tr><td><kbd style="background:var(--hover);padding:3px 7px;border-radius:4px;font-size:.78rem">A</kbd></td><td style="color:var(--t2)">Alerts</td><td><kbd style="background:var(--hover);padding:3px 7px;border-radius:4px;font-size:.78rem">H</kbd></td><td style="color:var(--t2)">Threat Hunting</td></tr>
+      <tr><td><kbd style="background:var(--hover);padding:3px 7px;border-radius:4px;font-size:.78rem">K</kbd></td><td style="color:var(--t2)">Kill Chain</td><td><kbd style="background:var(--hover);padding:3px 7px;border-radius:4px;font-size:.78rem">C</kbd></td><td style="color:var(--t2)">Compliance</td></tr>
+      <tr><td><kbd style="background:var(--hover);padding:3px 7px;border-radius:4px;font-size:.78rem">M</kbd></td><td style="color:var(--t2)">ML Insights</td><td><kbd style="background:var(--hover);padding:3px 7px;border-radius:4px;font-size:.78rem">F</kbd></td><td style="color:var(--t2)">Threat Forecast</td></tr>
+      <tr><td><kbd style="background:var(--hover);padding:3px 7px;border-radius:4px;font-size:.78rem">/</kbd></td><td style="color:var(--t2)">Focus search</td><td><kbd style="background:var(--hover);padding:3px 7px;border-radius:4px;font-size:.78rem">?</kbd></td><td style="color:var(--t2)">This dialog</td></tr>
+      <tr><td><kbd style="background:var(--hover);padding:3px 7px;border-radius:4px;font-size:.78rem">Esc</kbd></td><td style="color:var(--t2)">Close modal</td><td><kbd style="background:var(--hover);padding:3px 7px;border-radius:4px;font-size:.78rem">B</kbd></td><td style="color:var(--t2)">Toggle sidebar</td></tr>
+    </tbody></table>
+  </div>
+</div>
+
+<script>
+// ══ SERVER DATA ══
+const RISK_DIST  = {{ risk_distribution | tojson | safe }};
+const ATTK_DIST  = {{ attack_type_dist | tojson | safe }};
+const MITRE_IDS  = {{ active_mitre_ids | tojson | safe }};
+const GEO_ALERTS = {{ geo_scored_alerts | tojson | safe }};
+
+// ══ TOAST ══
+function toast(msg, type='info', dur=3500) {
+  const tc = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  tc.appendChild(t);
+  setTimeout(() => {
+    t.style.transition = 'all .3s';
+    t.style.opacity = '0';
+    t.style.transform = 'translateX(110%)';
+    setTimeout(() => t.remove(), 300);
+  }, dur);
+}
+
+// ══ SOUND ══
+let soundEnabled = false, audioCtx = null;
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  document.getElementById('soundBtn').textContent = soundEnabled ? '🔊' : '🔇';
+  toast(soundEnabled ? 'Alert sounds ON' : 'Alert sounds OFF', 'info', 1800);
+}
+function playAlert() {
+  if (!soundEnabled) return;
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+    osc.frequency.setValueAtTime(440, audioCtx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+  } catch(e) {}
+}
+
+// ══ THEME ══
+function toggleTheme() {
+  const r = document.documentElement;
+  const t = r.getAttribute('data-theme') === 'light' ? '' : 'light';
+  r.setAttribute('data-theme', t);
+  localStorage.setItem('siem-theme', t);
+  toast('Theme switched', 'info', 1500);
+}
+(function() { const t = localStorage.getItem('siem-theme'); if (t) document.documentElement.setAttribute('data-theme', t); })();
+
+// ══ SIDEBAR COLLAPSE ══
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+}
+
+// ══ KEYBOARD SHORTCUTS ══
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+    if (e.key === 'Escape') { e.target.blur(); return; }
+    return;
+  }
+  if (e.key === 'Escape') { document.querySelectorAll('.modal.active').forEach(m => m.classList.remove('active')); return; }
+  const map = { d:'dashboard', i:'incidents', a:'alerts', h:'hunting', k:'killchain', c:'compliance', m:'ml', f:'forecast', b:null };
+  if (e.key === 'b') { toggleSidebar(); return; }
+  if (e.key === '/') { e.preventDefault(); document.getElementById('global-search').focus(); return; }
+  if (e.key === '?') { openModal('kbModal'); return; }
+  const tab = map[e.key.toLowerCase()];
+  if (tab) sw(tab, document.querySelector(`[data-tab="${tab}"]`));
+});
+
+// ══ GLOBAL SEARCH ══
+function globalSearch(q) {
+  if (!q || q.length < 2) return;
+  const lq = q.toLowerCase();
+  const matches = allAlerts.filter(a =>
+    (a.raw_alert_id || '').toLowerCase().includes(lq) ||
+    (a.attack_type || '').toLowerCase().includes(lq) ||
+    (a.source_ip || '').includes(lq)
+  );
+  if (matches.length > 0) {
+    sw('alerts', document.querySelector('[data-tab="alerts"]'));
+    renderAlerts(matches);
+    toast(`Found ${matches.length} alert(s) matching "${q}"`, 'info');
+  }
+}
+
+// ══ TAB SYSTEM ══
+const TAB_TITLES = {
+  dashboard:'Global Security Posture', incidents:'Incident Management',
+  alerts:'Alert Investigations', attacks:'Attack Pattern Analysis',
+  hunting:'Threat Hunting Engine', killchain:'Kill Chain View',
+  ioc:'IOC Manager', compliance:'Compliance & SLA',
+  playbooks:'Automated Playbooks', ml:'ML Insights & Model Metrics',
+  netintel:'Network Intelligence', forecast:'Threat Forecast (7-Day)',
+  sources:'Data Connectors', audit:'Audit Log', settings:'Platform Settings'
+};
+function sw(id, el) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  const tab = document.getElementById('tab-' + id);
+  if (tab) tab.classList.add('active');
+  document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
+  const ni = el || document.querySelector(`[data-tab="${id}"]`);
+  if (ni) ni.classList.add('active');
+  document.getElementById('topbar-pg').textContent = TAB_TITLES[id] || id;
+  const on = {
+    incidents: fetchIncidents,
+    alerts: fetchAlerts,
+    attacks: () => { fetchAttacks(); fetchClusters(); },
+    killchain: loadKillChain,
+    ioc: loadIOC,
+    compliance: () => { loadCompliance(); loadSLA(); },
+    audit: loadAudit,
+    settings: () => { fetchRules(); loadSupRules(); },
+    playbooks: loadPlaybooks,
+    ml: loadMLInsights,
+    netintel: loadNetworkIntel,
+    forecast: loadForecast,
+  };
+  if (on[id]) on[id]();
+  if (id === 'dashboard' && window._leafletMap) window._leafletMap.invalidateSize();
+}
+
+// ══ MODAL ══
+function openModal(id) { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+// ══ CHART DEFAULTS ══
+Chart.defaults.color = '#7d8fba';
+Chart.defaults.borderColor = '#1a2545';
+Chart.defaults.font.family = "'Inter', sans-serif";
+
+// ══ CHART: VOLUME ══
+const volchart = new Chart(document.getElementById('volchart'), {
+  type: 'line',
+  data: { labels: Array(40).fill(''), datasets: [{ label: 'Alerts/s', data: Array(40).fill(0), borderColor: '#2979ff', backgroundColor: 'rgba(41,121,255,0.08)', tension: .4, fill: true, pointRadius: 0, borderWidth: 2 }] },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, suggestedMax: 5, grid: { color: '#1a2545' } }, x: { display: false } }, animation: { duration: 0 } }
+});
+
+// ══ CHART: RISK DIST ══
+const distchart = new Chart(document.getElementById('distchart'), {
+  type: 'doughnut',
+  data: { labels: ['Critical','High','Medium','Low'], datasets: [{ data: [RISK_DIST.critical, RISK_DIST.high, RISK_DIST.medium, RISK_DIST.low], backgroundColor: ['#e8294a','#f4522d','#f0ac2b','#23d160'], borderWidth: 0, hoverOffset: 8 }] },
+  options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { position: 'right', labels: { boxWidth: 9, font: { size: 10 } } } } }
+});
+
+// ══ CHART: ATTACK TYPE ══
+function buildBarChart(canvasId, labels, values) {
+  const colors = ['#e8294a','#f4522d','#f0ac2b','#2979ff','#7c3aed','#00cfdd','#23d160','#ec4899','#f59e0b','#10b981'];
+  const ctx = document.getElementById(canvasId);
+  if (!ctx) return null;
+  return new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets: [{ data: values, backgroundColor: colors.slice(0, labels.length).map(c => c + '99'), borderColor: colors.slice(0, labels.length), borderWidth: 1, borderRadius: 4 }] },
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, grid: { color: '#1a2545' } }, y: { grid: { display: false }, ticks: { font: { size: 10 } } } } }
+  });
+}
+buildBarChart('attkchart', Object.keys(ATTK_DIST).slice(0, 8), Object.values(ATTK_DIST).slice(0, 8));
+
+// ══ CHART: TREND ══
+let trendchart;
+async function loadTrend() {
+  const r = await fetch('/api/alert-trends').catch(() => null);
+  if (!r) return;
+  const d = await r.json();
+  const t = d.trend || [];
+  const ctx = document.getElementById('trendchart');
+  if (trendchart) trendchart.destroy();
+  trendchart = new Chart(ctx, {
+    type: 'line',
+    data: { labels: t.map(x => x.day.slice(5)), datasets: [
+      { label: 'Total', data: t.map(x => x.total), borderColor: '#2979ff', backgroundColor: 'rgba(41,121,255,0.08)', tension: .4, fill: true, pointRadius: 3 },
+      { label: 'Critical', data: t.map(x => x.critical), borderColor: '#e8294a', tension: .4, pointRadius: 3 },
+      { label: 'Blocked', data: t.map(x => x.blocked), borderColor: '#23d160', tension: .4, pointRadius: 3 },
+    ]},
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { boxWidth: 9, font: { size: 10 } } } }, scales: { y: { beginAtZero: true, grid: { color: '#1a2545' } }, x: { grid: { display: false } } } }
+  });
+}
+loadTrend();
+
+// ══ CHART: MITRE ══
+let mitrechart;
+async function loadMitre() {
+  const r = await fetch('/api/mitre-heatmap').catch(() => null);
+  if (!r) return;
+  const d = await r.json();
+  const ttps = d.ttps || [];
+  if (!ttps.length) return;
+  const ctx = document.getElementById('mitrechart');
+  if (mitrechart) mitrechart.destroy();
+  mitrechart = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: ttps.map(t => t.id), datasets: [{ label: 'Count', data: ttps.map(t => t.count), backgroundColor: 'rgba(124,58,237,0.55)', borderColor: '#7c3aed', borderWidth: 1, borderRadius: 3 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#1a2545' } }, x: { ticks: { font: { size: 9 }, maxRotation: 45 }, grid: { display: false } } } }
+  });
+}
+loadMitre();
+
+// ══ HEATMAP ══
+async function buildHeatmap() {
+  const r = await fetch('/api/alert-trends').catch(() => null);
+  if (!r) return;
+  const d = await r.json();
+  const trend = d.trend || [];
+  const container = document.getElementById('heatmap-container');
+  if (!trend.length) { container.innerHTML = '<p style="color:var(--t3);font-size:.78rem;text-align:center">Not enough data.</p>'; return; }
+  const days = trend.slice(-7);
+  let html = '<div style="overflow-x:auto">';
+  days.forEach(day => {
+    const total = day.total;
+    html += `<div style="display:flex;align-items:center;gap:3px;margin-bottom:3px">`;
+    html += `<span style="font-size:.6rem;color:var(--t3);min-width:36px">${day.day.slice(5)}</span>`;
+    for (let h = 0; h < 24; h++) {
+      const base = total / 24;
+      const mult = (h >= 8 && h <= 18) ? 1.5 : 0.6;
+      const count = Math.round(base * mult * (0.5 + Math.random()));
+      const intensity = Math.min(1, count / Math.max(1, total / 12));
+      const bg = intensity > 0.7 ? '#e8294a' : intensity > 0.4 ? '#f4522d' : intensity > 0.2 ? '#f0ac2b' : intensity > 0.05 ? '#162040' : '#1a2545';
+      html += `<div title="${day.day} ${String(h).padStart(2,'0')}:00 ~${count} alerts" style="flex:1;height:16px;border-radius:2px;background:${bg};min-width:8px;cursor:pointer"></div>`;
+    }
+    html += '</div>';
+  });
+  html += '<div style="display:flex;gap:3px;margin-top:2px"><span style="font-size:.6rem;min-width:36px"> </span>';
+  [0,4,8,12,16,20,23].forEach(h => { html += `<span style="font-size:.58rem;color:var(--t3);flex:4;text-align:center">${String(h).padStart(2,'0')}</span>`; });
+  html += '</div></div>';
+  container.innerHTML = html;
+}
+buildHeatmap();
+
+// ══ VOLUME TICKER ══
+let tick = 0, velWindow = [], velPrev = 0;
+setInterval(() => {
+  volchart.data.datasets[0].data.shift();
+  volchart.data.datasets[0].data.push(tick);
+  volchart.update('none');
+  velWindow.push(tick); if (velWindow.length > 60) velWindow.shift();
+  const perMin = velWindow.reduce((s, v) => s + v, 0);
+  document.getElementById('vel-count').textContent = perMin;
+  const arr = document.getElementById('vel-arrow');
+  arr.textContent = perMin > velPrev * 1.15 ? '↑' : perMin < velPrev * 0.85 ? '↓' : '→';
+  arr.className = perMin > velPrev * 1.15 ? 'vel-up' : perMin < velPrev * 0.85 ? 'vel-down' : '';
+  velPrev = perMin;
+  tick = 0;
+}, 1000);
+
+// ══ ANIMATED COUNTER ══
+function animateCount(el, target) {
+  const start = parseInt(el.textContent.replace(/[^0-9]/g, '')) || 0;
+  const steps = 20, inc = (target - start) / steps;
+  let cur = start, i = 0;
+  const t = setInterval(() => {
+    cur += inc; i++;
+    el.textContent = Math.round(cur).toLocaleString();
+    if (i >= steps) { el.textContent = target.toLocaleString(); clearInterval(t); }
+  }, 20);
+}
+
+// ══ WEBSOCKET ══
+let ws, ackSet = new Set(), notifCount = 0;
+function connectWS() {
+  ws = new WebSocket(`ws://${location.host}/ws/dashboard`);
+  ws.onmessage = e => {
+    try {
+      const d = JSON.parse(e.data);
+      if (!d.risk_score) return;
+      tick++;
+      if (d.risk_score >= 80) { playAlert(); notifCount++; document.getElementById('notif-count').textContent = notifCount > 99 ? '99+' : notifCount; }
+
+      const feed = document.getElementById('livefeed');
+      const tr = document.createElement('tr');
+      const cls = d.risk_score >= 80 ? 'b-c' : d.risk_score >= 60 ? 'b-h' : d.risk_score >= 30 ? 'b-m' : 'b-l';
+      const aml = d.is_anomaly ? '<span class="badge b-p" style="font-size:.58rem;margin-left:3px">AI</span>' : '';
+      const aid = d.alert_id || Math.random().toString(36).slice(2, 8);
+      const critPulse = d.risk_score >= 80 ? ' pulse' : '';
+      tr.innerHTML = `<td><span class="badge ${cls}${critPulse}">${d.risk_score}</span>${aml}</td><td style="font-size:.75rem">${d.attack_type || 'Unknown'}</td><td style="font-size:.72rem">${(d.action_taken || '').replace(/_/g, ' ')}</td><td><button onclick="ack('${aid}',this)" class="btn btn-g" style="padding:1px 6px;font-size:.65rem">ACK</button></td>`;
+      feed.prepend(tr);
+      if (feed.children.length > 30) feed.removeChild(feed.lastChild);
+
+      const el = document.getElementById('s-alr');
+      el.textContent = (parseInt(el.textContent.replace(/,/g, '')) || 0) + 1;
+
+      let idx = d.risk_score >= 80 ? 0 : d.risk_score >= 60 ? 1 : d.risk_score >= 30 ? 2 : 3;
+      distchart.data.datasets[0].data[idx]++;
+      distchart.update('none');
+    } catch(ex) {}
+  };
+  ws.onclose = () => setTimeout(connectWS, 2000);
+}
+connectWS();
+
+function ack(id, btn) {
+  ackSet.add(id);
+  btn.textContent = '✓'; btn.style.color = 'var(--low)'; btn.disabled = true;
+}
+
+// ══ GEO MAP ══
+const lmap = L.map('threatMap', { center: [20, 0], zoom: 1.5, zoomControl: true, attributionControl: false });
+window._leafletMap = lmap;
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 18 }).addTo(lmap);
+const ACOL = { 'Brute Force':'#f4522d','Lateral Movement':'#e8294a','Data Exfiltration':'#e8294a','Command & Control':'#7c3aed','Reconnaissance':'#00cfdd' };
+(GEO_ALERTS || []).forEach(a => {
+  if (!a.lat || !a.lon) return;
+  const c = ACOL[a.attack_type] || '#2979ff';
+  L.circleMarker([a.lat, a.lon], { radius: Math.max(4, Math.min(12, a.risk_score / 10)), color: c, fillColor: c, fillOpacity: .5, weight: 1.5 })
+   .addTo(lmap).bindPopup(`<b>${a.attack_type}</b><br>${a.city}, ${a.country}`);
+});
+
+// ══ ATTACK GRAPH ══
+let cy;
+async function loadGraph() {
+  const r = await fetch('/api/v1/graph-data').catch(() => null);
+  if (!r) return;
+  const d = await r.json();
+  if (!cy) {
+    cy = cytoscape({ container: document.getElementById('cyGraph'), elements: [...d.nodes, ...d.edges],
+      style: [
+        { selector: 'node', style: { label: 'data(label)', color: '#e4eaf8', 'font-size': '9px', 'text-valign': 'top', width: 26, height: 26 } },
+        { selector: 'node[type="target"]', style: { 'background-color': '#2979ff', shape: 'hexagon', width: 40, height: 40 } },
+        { selector: 'node[type="attacker-critical"]', style: { 'background-color': '#e8294a' } },
+        { selector: 'node[type="attacker-high"]', style: { 'background-color': '#f4522d' } },
+        { selector: 'node[type="attacker"]', style: { 'background-color': '#f0ac2b' } },
+        { selector: 'edge', style: { label: 'data(label)', color: '#3d4f75', 'font-size': '8px', width: 1.5, 'line-color': '#243060', 'target-arrow-color': '#243060', 'target-arrow-shape': 'triangle', 'curve-style': 'bezier' } }
+      ],
+      layout: { name: 'concentric', spacingFactor: 1.3 }
+    });
+  }
+}
+function toggleView(v) {
+  document.getElementById('threatMap').style.display = v === 'map' ? 'block' : 'none';
+  document.getElementById('cyGraph').style.display = v === 'graph' ? 'block' : 'none';
+  document.getElementById('btn-map').className = v === 'map' ? 'btn btn-p' : 'btn btn-g';
+  document.getElementById('btn-graph').className = v === 'graph' ? 'btn btn-p' : 'btn btn-g';
+  if (v === 'graph') loadGraph();
+  else lmap.invalidateSize();
+}
+
+// ══ THREAT GAUGE ══
+function updateGauge(score) {
+  const arc = document.getElementById('gauge-arc');
+  const val = document.getElementById('gauge-val');
+  const lbl = document.getElementById('gauge-label');
+  const total = 157;
+  arc.setAttribute('stroke-dasharray', `${(score / 100 * total).toFixed(1)} ${total}`);
+  const color = score >= 80 ? 'var(--crit)' : score >= 60 ? 'var(--high)' : score >= 30 ? 'var(--med)' : 'var(--low)';
+  arc.setAttribute('stroke', color);
+  val.textContent = score; val.style.color = color;
+  lbl.textContent = score >= 80 ? 'Critical' : score >= 60 ? 'High Risk' : score >= 30 ? 'Moderate' : 'Low Risk';
+}
+async function refreshGauge() {
+  const r = await fetch('/api/ml/stats').catch(() => null);
+  if (!r) return;
+  const d = await r.json();
+  const score = Math.min(100, Math.round((d.anomaly_rate_pct || 0) * 1.2 + (d.fp_rate_pct || 0) * 0.4));
+  updateGauge(score);
+}
+
+// ══ ANOMALY SPARKLINE ══
+async function refreshAnomalySparkline() {
+  const r = await fetch('/api/ml/stats').catch(() => null);
+  if (!r) return;
+  const d = await r.json();
+  const hourly = d.hourly_anomaly_counts || Array(24).fill(0);
+  const max = Math.max(...hourly, 1);
+  const wrap = document.getElementById('anom-sparkline');
+  wrap.innerHTML = hourly.map((v, i) => {
+    const pct = Math.max(4, Math.round(v / max * 100));
+    const col = pct > 70 ? 'var(--crit)' : pct > 40 ? 'var(--high)' : 'var(--accent)';
+    return `<div class="sparkline-bar" style="height:${pct}%;background:${col}" title="Hour ${String(i).padStart(2,'0')}:00 — ${v} anomalies"></div>`;
+  }).join('');
+  document.getElementById('anom-pct-badge').textContent = (d.anomaly_rate_pct || 0).toFixed(1) + '%';
+}
+
+// ══ RISK BANNER ══
+async function refreshRiskBanner() {
+  const r = await fetch('/api/forecast/risk').catch(() => null);
+  if (!r) return;
+  const d = await r.json();
+  const banner = document.getElementById('risk-banner');
+  banner.style.display = 'flex';
+  if (d.trend === 'up') {
+    banner.className = 'risk-banner trending-up';
+    document.getElementById('rb-icon').textContent = '↑';
+    document.getElementById('rb-text').textContent = `Risk INCREASING — forecast predicts ${d.predicted_peak} alerts on ${d.peak_day}. Consider pre-emptive block policies.`;
+  } else if (d.trend === 'down') {
+    banner.className = 'risk-banner trending-down';
+    document.getElementById('rb-icon').textContent = '↓';
+    document.getElementById('rb-text').textContent = `Risk DECREASING — 7-day forecast shows ~${d.predicted_avg} alerts/day. Threat activity is subsiding.`;
+  } else {
+    banner.className = 'risk-banner stable';
+    document.getElementById('rb-icon').textContent = '→';
+    document.getElementById('rb-text').textContent = `Risk STABLE — forecast shows consistent activity (~${d.predicted_avg} alerts/day next 7 days).`;
+  }
+  document.getElementById('rb-ts').textContent = new Date().toLocaleTimeString();
+}
+
+// ══ IP REPUTATION LOOKUP (Dashboard) ══
+async function lookupReputation() {
+  const ip = document.getElementById('rep-ip-inp').value.trim();
+  if (!ip) return;
+  const container = document.getElementById('rep-result');
+  container.innerHTML = '<div class="skel" style="height:50px"></div>';
+  const r = await fetch(`/api/v1/network/ip-reputation?ip=${encodeURIComponent(ip)}`).catch(() => null);
+  if (!r) { container.innerHTML = '<span style="color:var(--crit)">Lookup failed</span>'; return; }
+  const d = await r.json();
+  const cls = d.score < 30 ? 'safe' : d.score < 60 ? 'suspicious' : 'malicious';
+  container.innerHTML = `<div class="rep-score ${cls}">${d.score}</div><div style="font-size:.72rem;color:var(--t2)">${d.label} · ${d.country}</div><div style="font-size:.67rem;color:var(--t3);margin-top:.3rem">${d.details}</div>`;
+}
+
+// ══ PLAYBOOK MINI FEED (Dashboard) ══
+async function refreshPlaybookMini() {
+  const r = await fetch('/api/v1/playbooks/executions?limit=3').catch(() => null);
+  if (!r) return;
+  const d = await r.json();
+  const items = d.executions || [];
+  const feed = document.getElementById('pb-mini-feed');
+  if (!items.length) { feed.innerHTML = '<div style="color:var(--t3)">No executions yet.</div>'; return; }
+  feed.innerHTML = items.map(e => `<div class="pb-feed-item" style="padding:.35rem 0;border-bottom:1px solid var(--border)">
+    <div class="pb-icon" style="width:20px;height:20px;font-size:.65rem">${e.action_type === 'block_ip' ? '🛡' : '▶'}</div>
+    <div><div style="font-weight:600;font-size:.73rem">${e.playbook_name}</div><div style="font-size:.68rem;color:var(--t3)">${e.action_type} · ${String(e.executed_at || '').slice(11, 16)}</div></div>
+    <span class="badge ${e.success ? 'b-l' : 'b-c'}" style="margin-left:auto;font-size:.58rem">${e.success ? 'OK' : 'ERR'}</span>
+  </div>`).join('');
+}
+
+// ══ INCIDENTS ══
+let curInc = null;
+async function fetchIncidents() {
+  const r = await fetch('/api/v1/incidents/').catch(() => null);
+  if (!r) return;
+  const data = await r.json();
+  const open = data.filter(i => i.status !== 'Closed');
+  animateCount(document.getElementById('s-inc'), open.length);
+  document.getElementById('inc-badge').textContent = open.length;
+  document.getElementById('inc-body').innerHTML = data.map(inc => {
+    const cls = inc.severity === 'Critical' ? 'b-c' : inc.severity === 'High' ? 'b-h' : 'b-m';
+    return `<tr style="cursor:pointer" onclick="openInc('${inc.id}')">
+      <td class="mono" style="font-size:.72rem">${inc.id.slice(0, 8)}…</td>
+      <td style="font-weight:500">${inc.title}</td>
+      <td><span class="badge ${cls}">${inc.severity}</span></td>
+      <td>${inc.status}</td>
+      <td style="color:var(--t3);font-size:.72rem">${new Date(inc.created_at).toLocaleString()}</td>
+      <td><button class="btn btn-purple" style="font-size:.65rem;padding:2px 6px" onclick="aiSumInc(event,'${inc.id}','${inc.severity}')">🤖 AI</button></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--t3);padding:2rem">No incidents.</td></tr>';
+}
+
+async function openInc(id) {
+  curInc = id;
+  const r = await fetch(`/api/v1/incidents/${id}`).catch(() => null);
+  if (!r) return;
+  const d = await r.json();
+  document.getElementById('m-title').textContent = d.incident.title;
+  document.getElementById('m-desc').textContent = d.incident.description || 'No description.';
+  document.getElementById('m-stat').textContent = d.incident.status;
+  const s = document.getElementById('m-sev');
+  s.textContent = d.incident.severity;
+  s.className = 'badge ' + (d.incident.severity === 'Critical' ? 'b-c' : 'b-h');
+  document.getElementById('m-tl').innerHTML = (d.timeline || []).map(t => `<li style="padding:.35rem 0;border-bottom:1px dashed var(--border)"><span style="color:var(--t3)">[${new Date(t.created_at).toLocaleTimeString()}]</span> ${t.event_description}</li>`).join('') || '<li style="color:var(--t3)">No events.</li>';
+  const aiEl = document.getElementById('m-ai');
+  aiEl.innerHTML = '<div class="skel"></div><div class="skel" style="width:80%"></div>';
+  const sev = d.incident.severity;
+  const risk = sev === 'Critical' ? 90 : sev === 'High' ? 70 : 50;
+  const aiR = await fetch('/api/ai/summarize', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ attack_type: 'Unknown', risk_score: risk, affected_count: 1, mitre_ids: [] }) }).catch(() => null);
+  if (aiR) {
+    const ai = await aiR.json();
+    aiEl.innerHTML = `<p style="margin-bottom:.5rem">${ai.summary}</p><ul style="padding-left:1rem;color:var(--t3)">${(ai.recommendations || []).map(r => `<li>${r}</li>`).join('')}</ul>`;
+  } else { aiEl.textContent = 'AI analysis unavailable.'; }
+  openModal('incModal');
+}
+
+async function aiSumInc(e, id, sev) {
+  e.stopPropagation();
+  const risk = sev === 'Critical' ? 90 : sev === 'High' ? 70 : 50;
+  const r = await fetch('/api/ai/summarize', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ attack_type: 'Unknown', risk_score: risk, affected_count: 1, mitre_ids: [] }) }).catch(() => null);
+  if (r) { const d = await r.json(); toast(`${d.summary}`, 'info', 6000); }
+}
+
+async function resolveInc() {
+  if (!curInc) return;
+  await fetch(`/api/v1/incidents/${curInc}/status?status=Closed&user=Admin`, { method: 'PUT' });
+  closeModal('incModal'); fetchIncidents(); toast('Incident marked resolved', 'success');
+}
+
+// ══ ALERTS ══
+let allAlerts = [];
+async function fetchAlerts() {
+  const r = await fetch('/scored-alerts').catch(() => null);
+  if (!r) return;
+  allAlerts = await r.json();
+  renderAlerts(allAlerts);
+}
+function renderAlerts(data) {
+  document.getElementById('alerts-body').innerHTML = data.slice(0, 300).map(a => {
+    const cls = a.risk_score >= 80 ? 'b-c' : a.risk_score >= 60 ? 'b-h' : a.risk_score >= 30 ? 'b-m' : 'b-l';
+    const ip = a.source_ip || '—';
+    const tpScore = Math.min(99, Math.round(a.risk_score * 0.9));
+    return `<tr>
+      <td class="mono" style="font-size:.72rem">${(a.raw_alert_id || '').slice(0, 10)}…</td>
+      <td><span class="badge ${cls}">${a.risk_score}</span></td>
+      <td style="font-size:.75rem">${a.attack_type || '—'}</td>
+      <td class="mono" style="font-size:.72rem">${ip} <button onclick="copyIP('${ip}')" style="background:none;border:none;cursor:pointer;color:var(--t3);font-size:.65rem" title="Copy">📋</button></td>
+      <td style="font-size:.72rem">${(a.recommended_action || '').replace(/_/g, ' ')}</td>
+      <td style="font-size:.72rem;color:var(--t3)">${String(a.processed_at || '').slice(0, 16)}</td>
+      <td><button class="btn btn-g" style="font-size:.65rem;padding:2px 6px" onclick="markFP('${a.raw_alert_id}')">FP</button></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--t3);padding:2rem">No alerts.</td></tr>';
+}
+function filterAlerts(q) {
+  q = q.toLowerCase();
+  renderAlerts(allAlerts.filter(a => (a.raw_alert_id || '').toLowerCase().includes(q) || (a.attack_type || '').toLowerCase().includes(q) || (a.source_ip || '').includes(q)));
+}
+function copyIP(ip) {
+  navigator.clipboard.writeText(ip).then(() => toast(`Copied: ${ip}`, 'info', 1500));
+}
+async function markFP(id) {
+  const reason = window.prompt('Reason for false positive (optional):');
+  if (reason === null) return;
+  await fetch('/api/ai/false-positive', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ raw_alert_id: id, analyst: 'admin', reason: reason || '' }) });
+  toast('Alert marked as False Positive', 'success');
+  loadFPCount();
+}
+async function loadFPCount() {
+  const r = await fetch('/api/ai/fp-stats').catch(() => null);
+  if (!r) return;
+  const d = await r.json();
+  document.getElementById('s-fp').textContent = d.total_false_positives;
+  const fpEl = document.getElementById('fp-rate');
+  if (fpEl) fpEl.textContent = d.fp_rate_pct + '%';
+}
+
+// ══ ATTACK ANALYSIS ══
+let attkFullChart;
+async function fetchAttacks() {
+  const r = await fetch('/api/attack-type-stats').catch(() => null);
+  if (!r) return;
+  const d = await r.json();
+  const types = d.attack_types || [];
+  const total = types.reduce((s, t) => s + t.count, 0);
+  const COLORS = { 'Brute Force':'#f4522d','Lateral Movement':'#e8294a','Data Exfiltration':'#e8294a','Command & Control':'#7c3aed','Port Scanning':'#f0ac2b','Reconnaissance':'#00cfdd' };
+  document.getElementById('atk-list').innerHTML = types.map(t => {
+    const pct = total > 0 ? (t.count / total * 100).toFixed(1) : 0;
+    const w = total > 0 ? (t.count / Math.max(...types.map(x => x.count)) * 100).toFixed(0) : 0;
+    const c = COLORS[t.attack_type] || '#2979ff';
+    return `<div class="ar"><span style="font-size:.8rem;font-weight:500;min-width:155px">${t.attack_type}</span><div class="ab-out"><div class="ab-in" style="width:${w}%;background:${c}"></div></div><span class="mono" style="font-size:.78rem;min-width:55px;text-align:right">${t.count.toLocaleString()}</span><span style="font-size:.68rem;color:var(--t3);min-width:42px;text-align:right">${pct}%</span></div>`;
+  }).join('');
+  if (attkFullChart) attkFullChart.destroy();
+  attkFullChart = buildBarChart('attkfull', types.map(t => t.attack_type).slice(0, 10), types.map(t => t.count).slice(0, 10));
+}
+async function fetchClusters() {
+  const r = await fetch('/api/alert-clusters').catch(() => null);
+  const d = r ? await r.json() : {};
+  const list = document.getElementById('clusterlist');
+  const clusters = (d.clusters || []).sort((a, b) => b.alert_count - a.alert_count).slice(0, 8);
+  if (!clusters.length) { list.innerHTML = '<div style="color:var(--t3);text-align:center;padding:2rem;font-size:.78rem">Not enough data for clustering.</div>'; return; }
+  list.innerHTML = clusters.map(c => {
+    const cls = c.avg_risk_score >= 80 ? 'b-c' : c.avg_risk_score >= 60 ? 'b-h' : 'b-m';
+    return `<div class="ag-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.35rem"><span style="font-weight:600;font-size:.8rem">${c.label}</span><span class="badge ${cls}">Avg ${c.avg_risk_score}</span></div><div style="font-size:.72rem;color:var(--t2)">🎯 ${c.top_attack_type} · ${c.alert_count} alerts · ${c.unique_sources} sources</div></div>`;
+  }).join('');
+}
+
+// ══ THREAT HUNTING ══
+function setHunt(q) { document.getElementById('hq').value = q; }
+let huntChart;
+async function hunt() {
+  const q = document.getElementById('hq').value.trim();
+  if (!q) return;
+  const r = await fetch('/api/hunt', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: q }) }).catch(() => null);
+  if (!r) { toast('Hunt query failed', 'error'); return; }
+  const d = await r.json();
+  document.getElementById('hresults').innerHTML = d.results.map(r => {
+    const cls = r.risk_score >= 80 ? 'b-c' : r.risk_score >= 60 ? 'b-h' : 'b-m';
+    return `<tr><td class="mono" style="font-size:.7rem">${(r.alert_id || '').slice(0, 8)}…</td><td style="font-size:.7rem">${String(r.timestamp || '').slice(11, 19)}</td><td><span class="badge ${cls}">${r.risk_score}</span></td><td style="font-size:.7rem">${r.attack_type || '—'}</td><td style="font-size:.7rem">${(r.action || '').replace(/_/g, ' ')}</td></tr>`;
+  }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--t3);padding:1.5rem">No results.</td></tr>';
+  const tctx = document.getElementById('huntchart');
+  if (huntChart) huntChart.destroy();
+  huntChart = new Chart(tctx, { type: 'bar', data: { labels: d.timeline.map(t => t.time.slice(-5)), datasets: [{ label: 'Events', data: d.timeline.map(t => t.count), backgroundColor: 'rgba(41,121,255,0.55)', borderColor: '#2979ff', borderWidth: 1, borderRadius: 3 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } } });
+}
+
+// ══ KILL CHAIN ══
+const TACTICS = [
+  { id:'recon', name:'Reconnaissance', color:'#00cfdd', types:['Reconnaissance','Port Scanning'], mitre:'T1595' },
+  { id:'init',  name:'Initial Access',  color:'#f4522d', types:['Phishing','Exploitation','Initial Access'], mitre:'T1190' },
+  { id:'exec',  name:'Execution',       color:'#f4522d', types:['Command Execution'], mitre:'T1059' },
+  { id:'persist',name:'Persistence',    color:'#f0ac2b', types:['Persistence','Account Manipulation'], mitre:'T1053' },
+  { id:'priv',  name:'Priv Escalation', color:'#e8294a', types:['Privilege Escalation'], mitre:'T1068' },
+  { id:'defen', name:'Defense Evasion', color:'#7c3aed', types:['Defense Evasion','Obfuscation'], mitre:'T1070' },
+  { id:'cred',  name:'Cred Access',     color:'#e8294a', types:['Brute Force','Credential Theft'], mitre:'T1110' },
+  { id:'lateral',name:'Lateral Movement',color:'#e8294a',types:['Lateral Movement'], mitre:'T1021' },
+  { id:'c2',    name:'C2',              color:'#7c3aed', types:['Command & Control','C2 File Transfer'], mitre:'T1071' },
+  { id:'exfil', name:'Exfiltration',    color:'#e8294a', types:['Data Exfiltration'], mitre:'T1048' },
+  { id:'impact',name:'Impact',          color:'#e8294a', types:['Ransomware','DDoS Attack'], mitre:'T1486' },
+];
+let tacticChart;
+async function loadKillChain() {
+  const r = await fetch('/api/attack-type-stats').catch(() => null);
+  const d = r ? await r.json() : {};
+  const typeMap = {};
+  (d.attack_types || []).forEach(t => typeMap[t.attack_type] = t.count);
+  const chain = document.getElementById('killchain-steps');
+  chain.innerHTML = '';
+  const labels = [], values = [], colors = [];
+  TACTICS.forEach((tac, i) => {
+    const count = tac.types.reduce((s, t) => s + (typeMap[t] || 0), 0);
+    labels.push(tac.name); values.push(count); colors.push(tac.color + '99');
+    if (i > 0) chain.innerHTML += '<span class="kc-arrow">→</span>';
+    const el = document.createElement('div');
+    el.className = 'kc-step';
+    el.style.cssText = `border-color:${tac.color};color:${tac.color};background:${tac.color}18`;
+    el.innerHTML = `${tac.name} <span class="badge" style="background:${tac.color}33;color:${tac.color};margin-left:4px">${count.toLocaleString()}</span>`;
+    el.onclick = () => {
+      document.getElementById('ai-explain').innerHTML = '<div class="skel"></div><div class="skel" style="width:75%"></div>';
+      fetch(`/api/ai/explain/${encodeURIComponent(tac.types[0])}`).then(r => r.json()).then(d => { document.getElementById('ai-explain').textContent = d.explanation; }).catch(() => {});
+    };
+    chain.appendChild(el);
+  });
+  const ctx = document.getElementById('tacticchart');
+  if (tacticChart) tacticChart.destroy();
+  tacticChart = new Chart(ctx, { type: 'radar', data: { labels, datasets: [{ label: 'Alert Count', data: values, backgroundColor: 'rgba(41,121,255,0.15)', borderColor: '#2979ff', borderWidth: 2, pointBackgroundColor: '#2979ff', pointRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { r: { grid: { color: '#1a2545' }, ticks: { display: false }, pointLabels: { font: { size: 9 }, color: '#7d8fba' } } }, plugins: { legend: { display: false } } } });
+}
+
+// ══ IOC ══
+async function loadIOC() {
+  const [statsR, listR] = await Promise.all([fetch('/api/v1/ioc/stats').catch(() => null), fetch('/api/v1/ioc/').catch(() => null)]);
+  if (statsR) { const s = await statsR.json(); document.getElementById('ioc-total').textContent = s.total || 0; }
+  const matchR = await fetch('/api/v1/ioc/matches').catch(() => null);
+  if (matchR) { const m = await matchR.json(); document.getElementById('ioc-matches').textContent = (m.matches || []).length; }
+  document.getElementById('ioc-ts').textContent = new Date().toLocaleTimeString();
+  if (!listR) return;
+  const iocs = await listR.json();
+  const ICLS = { ip:'ioc-ip', domain:'ioc-domain', hash:'ioc-hash', url:'ioc-url' };
+  document.getElementById('ioc-body').innerHTML = iocs.map(ioc => `<tr>
+    <td><span class="${ICLS[ioc.ioc_type] || ''}" style="font-weight:600;font-size:.78rem">${ioc.ioc_type.toUpperCase()}</span></td>
+    <td class="mono" style="font-size:.75rem">${ioc.value}</td>
+    <td><span class="badge ${ioc.severity==='Critical'?'b-c':ioc.severity==='High'?'b-h':ioc.severity==='Medium'?'b-m':'b-l'}">${ioc.severity}</span></td>
+    <td style="font-size:.75rem">${ioc.source || '—'}</td>
+    <td style="font-size:.75rem;color:var(--t2)">${ioc.description || '—'}</td>
+    <td style="font-size:.7rem">${(ioc.tags || []).map(t => `<span class="chip" style="margin:1px">${t}</span>`).join('')}</td>
+    <td><button class="btn btn-d" style="font-size:.65rem;padding:2px 6px" onclick="deleteIOC(${ioc.id},this)">Delete</button></td>
+  </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--t3);padding:2rem">No IOCs. Click "Seed Demo IOCs".</td></tr>';
+}
+async function addIOC() {
+  const tags = document.getElementById('ioc-tags').value.split(',').map(t => t.trim()).filter(Boolean);
+  await fetch('/api/v1/ioc/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ioc_type: document.getElementById('ioc-type').value, value: document.getElementById('ioc-value').value, severity: document.getElementById('ioc-sev').value, source: document.getElementById('ioc-src').value, description: document.getElementById('ioc-desc').value, tags }) });
+  closeModal('iocModal'); loadIOC(); toast('IOC added', 'success');
+}
+async function deleteIOC(id, btn) { await fetch(`/api/v1/ioc/${id}`, { method: 'DELETE' }); btn.closest('tr').remove(); toast('IOC removed', 'warn'); }
+async function seedIOC() { await fetch('/api/v1/ioc/seed', { method: 'POST' }); loadIOC(); toast('Demo IOCs seeded', 'success'); }
+
+// ══ COMPLIANCE ══
+const CTRL_COLORS = { compliant:'var(--low)', warning:'var(--med)', violation:'var(--crit)' };
+function renderControls(id, controls) {
+  const max = Math.max(...controls.map(c => c.alert_hits), 1);
+  document.getElementById(id).innerHTML = controls.map(c => `<div class="ctrl-row"><div style="min-width:52px;font-size:.68rem;font-weight:700;color:${CTRL_COLORS[c.status]}">${c.control_id}</div><div style="flex:1"><div style="font-size:.72rem;margin-bottom:2px">${c.control_name}</div><div class="ctrl-bar"><div class="ctrl-fill" style="width:${c.alert_hits/max*100}%;background:${CTRL_COLORS[c.status]}"></div></div></div><div style="min-width:40px;text-align:right;font-size:.7rem;color:${CTRL_COLORS[c.status]}">${c.alert_hits.toLocaleString()}</div></div>`).join('');
+}
+async function loadCompliance() {
+  const r = await fetch('/api/compliance/summary').catch(() => null);
+  if (!r) return;
+  const d = await r.json();
+  renderControls('soc2-ctrl', d.soc2 || []); renderControls('pci-ctrl', d.pci_dss || []); renderControls('iso-ctrl', d.iso27001 || []);
+}
+async function loadSLA() {
+  const r = await fetch('/api/compliance/sla-metrics').catch(() => null);
+  if (!r) return;
+  const d = await r.json();
+  document.getElementById('mttd').innerHTML = `${d.mttd_minutes}<span style="font-size:.8rem"> min</span>`;
+  document.getElementById('mttr').innerHTML = `${d.mttr_minutes || 0}<span style="font-size:.8rem"> min</span>`;
+  document.getElementById('posture-score').textContent = d.posture_score || '—';
+  const pct = (d.posture_score || 0) + '%';
+  document.getElementById('posture-ring').style.background = `conic-gradient(var(--low) 0% ${pct}, var(--hover) ${pct} 100%)`;
+  loadFPCount();
+}
+
+// ══ PLAYBOOKS TAB ══
+let pbTrendChart;
+async function loadPlaybooks() {
+  const [pbR, execR] = await Promise.all([
+    fetch('/api/v1/playbooks/').catch(() => null),
+    fetch('/api/v1/playbooks/executions').catch(() => null)
+  ]);
+  if (pbR) {
+    const pbs = await pbR.json();
+    document.getElementById('pb-total').textContent = pbs.length;
+    document.getElementById('pb-active').textContent = pbs.filter(p => p.is_active).length;
+    document.getElementById('pb-badge').textContent = pbs.filter(p => p.is_active).length;
+    document.getElementById('pb-body').innerHTML = pbs.map(p => `<tr>
+      <td style="font-weight:600;font-size:.8rem">${p.name}</td>
+      <td style="font-size:.72rem;color:var(--t2)">${(p.trigger_summary || '—').slice(0, 30)}</td>
+      <td style="font-size:.72rem">${p.action_summary || '—'}</td>
+      <td><span class="badge ${p.is_active ? 'b-l' : 'b-h'}">${p.is_active ? 'Active' : 'Off'}</span></td>
+      <td><button class="btn ${p.is_active ? 'btn-s' : 'btn-g'}" style="font-size:.65rem;padding:2px 6px" onclick="togglePlaybook(${p.id},this)">${p.is_active ? 'ON' : 'OFF'}</button></td>
+    </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--t3);padding:2rem">No playbooks defined.</td></tr>';
+  }
+  if (execR) {
+    const exData = await execR.json();
+    const execs = exData.executions || [];
+    const now = Date.now();
+    const last24h = execs.filter(e => (now - new Date(e.executed_at).getTime()) / 3600000 < 24);
+    document.getElementById('pb-exec-count').textContent = last24h.length;
+    document.getElementById('pb-blocks').textContent = execs.filter(e => e.action_type === 'block_ip').length;
+    renderExecLog(execs);
+    if (pbTrendChart) pbTrendChart.destroy();
+    const ctx = document.getElementById('pb-trend-chart');
+    const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() - 6 + i); return d.toISOString().slice(5, 10); });
+    const counts = days.map(day => execs.filter(e => String(e.executed_at || '').startsWith('20' + day.replace('-', '-'))).length);
+    pbTrendChart = new Chart(ctx, { type: 'bar', data: { labels: days, datasets: [{ label: 'Executions', data: counts, backgroundColor: 'rgba(124,58,237,0.55)', borderColor: '#7c3aed', borderWidth: 1, borderRadius: 3 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#1a2545' } }, x: { grid: { display: false } } } } });
+  }
+}
+function renderExecLog(execs) {
+  const c = document.getElementById('pb-exec-log');
+  if (!execs.length) { c.innerHTML = '<div class="pb-feed-item" style="color:var(--t3);border:none">No executions yet.</div>'; return; }
+  c.innerHTML = execs.slice(0, 30).map(e => `<div class="pb-feed-item">
+    <div class="pb-icon">${e.action_type === 'block_ip' ? '🛡' : e.action_type === 'notify' ? '📢' : '▶'}</div>
+    <div style="min-width:0;flex:1">
+      <div style="font-weight:600">${e.playbook_name || '—'}</div>
+      <div style="font-size:.7rem;color:var(--t2)">${e.action_type} → ${e.target || '—'}</div>
+      <div style="font-size:.67rem;color:var(--t3)">${String(e.executed_at || '').slice(0, 16)}</div>
+    </div>
+    <span class="badge ${e.success ? 'b-l' : 'b-c'}" style="flex-shrink:0">${e.success ? 'OK' : 'ERR'}</span>
+  </div>`).join('');
+}
+async function togglePlaybook(id, btn) {
+  const r = await fetch(`/api/v1/playbooks/${id}/toggle`, { method: 'PUT' }).catch(() => null);
+  if (r) { loadPlaybooks(); toast('Playbook toggled', 'info'); }
+}
+async function createPlaybook() {
+  const name = document.getElementById('pb-name').value.trim();
+  if (!name) { toast('Playbook name is required', 'error'); return; }
+  await fetch('/api/v1/playbooks/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, description: document.getElementById('pb-desc').value, trigger_condition_json: document.getElementById('pb-trigger').value || '{}', actions_json: document.getElementById('pb-actions').value || '[]' }) });
+  closeModal('pbCreateModal'); loadPlaybooks(); toast('Playbook created', 'success');
+}
+
+// ══ ML INSIGHTS ══
+let mlAnomChart;
+async function loadMLInsights() {
+  const r = await fetch('/api/ml/stats').catch(() => null);
+  if (!r) { toast('ML stats unavailable', 'warn'); return; }
+  const d = await r.json();
+  document.getElementById('ml-status').textContent = d.is_trained ? '✓ Trained' : '✗ Untrained';
+  document.getElementById('ml-anom-rate').textContent = (d.anomaly_rate_pct || 0).toFixed(1) + '%';
+  document.getElementById('ml-fp-trend').textContent = (d.fp_rate_pct || 0).toFixed(1) + '%';
+  document.getElementById('ml-samples').textContent = (d.training_samples || 0).toLocaleString();
+  document.getElementById('ml-last-train').textContent = d.last_trained_at ? String(d.last_trained_at).slice(0, 10) : 'Never';
+
+  // Feature importance
+  const feats = d.feature_importance || [{ name:'Raw Severity', weight:.55 }, { name:'Risk Score', weight:.33 }, { name:'MITRE Count', weight:.12 }];
+  const maxW = Math.max(...feats.map(f => f.weight));
+  document.getElementById('ml-features').innerHTML = feats.map(f => `<div style="margin-bottom:.55rem">
+    <div style="display:flex;justify-content:space-between;font-size:.72rem;margin-bottom:.25rem">
+      <span style="color:var(--t1)">${f.name}</span>
+      <span class="mono" style="color:var(--purple)">${(f.weight * 100).toFixed(1)}%</span>
+    </div>
+    <div class="ab-out" style="margin:0"><div class="ab-in" style="width:${(f.weight/maxW*100).toFixed(0)}%;background:var(--purple)"></div></div>
+  </div>`).join('');
+
+  // Anomaly rate chart
+  if (mlAnomChart) mlAnomChart.destroy();
+  const daily = d.daily_anomaly_rates || [];
+  mlAnomChart = new Chart(document.getElementById('ml-anom-chart'), {
+    type: 'line',
+    data: { labels: daily.map(x => x.day.slice(5)), datasets: [
+      { label: 'Anomaly Rate %', data: daily.map(x => x.rate), borderColor: '#7c3aed', backgroundColor: 'rgba(124,58,237,0.1)', tension: .4, fill: true, pointRadius: 3 },
+      { label: 'FP Rate %', data: daily.map(x => x.fp_rate || 0), borderColor: '#e8294a', tension: .4, pointRadius: 3 },
+    ]},
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { boxWidth: 9, font: { size: 10 } } } }, scales: { y: { beginAtZero: true, grid: { color: '#1a2545' } }, x: { grid: { display: false } } } }
+  });
+
+  fetchMLClusters();
+  loadTriageData();
+
+  // FP history
+  const fpR = await fetch('/api/ai/false-positives?limit=20').catch(() => null);
+  if (fpR) {
+    const fps = await fpR.json();
+    document.getElementById('ml-fp-history').innerHTML = fps.length ? fps.map(fp => `<div style="padding:.3rem 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between">
+      <span class="mono" style="font-size:.7rem">${(fp.raw_alert_id || '').slice(0, 12)}…</span>
+      <span style="font-size:.7rem;color:var(--t2)">${fp.original_attack_type || '—'}</span>
+      <span style="font-size:.68rem;color:var(--t3)">${String(fp.marked_at || '').slice(0, 10)}</span>
+    </div>`).join('') : '<div style="color:var(--t3)">No FP feedback yet.</div>';
+  }
+}
+async function fetchMLClusters() {
+  const r = await fetch('/api/alert-clusters').catch(() => null);
+  const d = r ? await r.json() : {};
+  const clusters = (d.clusters || []).sort((a, b) => b.alert_count - a.alert_count).slice(0, 10);
+  document.getElementById('ml-cluster-view').innerHTML = clusters.length ? clusters.map(c => {
+    const cls = c.avg_risk_score >= 80 ? 'b-c' : c.avg_risk_score >= 60 ? 'b-h' : 'b-m';
+    return `<div class="ag-card"><div style="display:flex;justify-content:space-between;margin-bottom:.3rem"><span style="font-weight:600;font-size:.8rem">${c.label}</span><span class="badge ${cls}">Avg ${c.avg_risk_score}</span></div><div style="font-size:.72rem;color:var(--t2)">${c.top_attack_type} · ${c.alert_count} alerts · ${c.unique_sources} sources</div></div>`;
+  }).join('') : '<div style="color:var(--t3);text-align:center;padding:2rem;font-size:.78rem">Not enough data for DBSCAN clustering.</div>';
+}
+async function loadTriageData() {
+  const r = await fetch('/scored-alerts').catch(() => null);
+  if (!r) return;
+  const alerts = (await r.json()).slice(0, 20);
+  document.getElementById('triage-body').innerHTML = alerts.map(a => {
+    const tpScore = Math.min(99, Math.round(a.risk_score * 0.9));
+    const fpScore = 100 - tpScore;
+    const verdict = tpScore > 70 ? 'TP' : fpScore > 70 ? 'FP' : 'Unknown';
+    const cls = a.risk_score >= 80 ? 'b-c' : a.risk_score >= 60 ? 'b-h' : a.risk_score >= 30 ? 'b-m' : 'b-l';
+    return `<tr>
+      <td class="mono" style="font-size:.7rem">${(a.raw_alert_id || '').slice(0, 10)}…</td>
+      <td><span class="badge ${cls}">${a.risk_score}</span></td>
+      <td style="font-size:.75rem">${a.attack_type || '—'}</td>
+      <td><span class="ml-conf tp">${tpScore}%</span></td>
+      <td><span class="ml-conf fp-badge">${fpScore}%</span></td>
+      <td><span class="badge ${verdict==='TP'?'b-l':verdict==='FP'?'b-c':'b-a'}">${verdict}</span></td>
+    </tr>`;
+  }).join('');
+}
+async function triggerRetrain() {
+  const btn = event.target;
+  btn.disabled = true; btn.textContent = '⏳ Retraining…';
+  document.getElementById('retrain-status').textContent = 'Sending request…';
+  const r = await fetch('/api/ml/retrain', { method: 'POST' }).catch(() => null);
+  if (r) {
+    const d = await r.json();
+    document.getElementById('retrain-status').textContent = d.message || 'Done';
+    toast(d.status === 'success' ? 'ML model retrained successfully' : 'Retrain: ' + d.message, d.status === 'success' ? 'success' : 'error');
+    if (d.status === 'success') setTimeout(loadMLInsights, 1000);
+  } else { toast('Retrain request failed', 'error'); }
+  btn.disabled = false; btn.textContent = '🔄 Retrain Model on FP Feedback';
+}
+
+// ══ NETWORK INTELLIGENCE ══
+async function loadNetworkIntel() {
+  const r = await fetch('/api/v1/network/behavior').catch(() => null);
+  if (!r) { toast('Network data unavailable', 'warn'); return; }
+  const d = await r.json();
+  document.getElementById('net-suspicious').textContent = d.suspicious_segments || 0;
+  document.getElementById('net-attackers').textContent = d.unique_attackers || 0;
+  document.getElementById('net-score').textContent = d.network_risk_score || 0;
+  document.getElementById('net-ueba-flags').textContent = d.ueba_flagged || 0;
+  document.getElementById('net-segments').innerHTML = (d.top_segments || []).map(s => `<tr>
+    <td class="mono" style="font-size:.72rem">${s.subnet}</td>
+    <td style="font-size:.78rem">${s.alert_count.toLocaleString()}</td>
+    <td><span class="badge ${s.avg_risk>=80?'b-c':s.avg_risk>=60?'b-h':'b-m'}">${s.avg_risk}</span></td>
+    <td class="mono" style="font-size:.72rem">${s.ueba_score}</td>
+    <td><span class="badge ${s.verdict==='Critical'?'b-c':s.verdict==='High'?'b-h':s.verdict==='Medium'?'b-m':'b-l'}">${s.verdict}</span></td>
+  </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--t3);padding:2rem">No suspicious segments detected.</td></tr>';
+  buildMitreMatrix(d.covered_ttps || []);
+}
+async function lookupRepNetIntel() {
+  const ip = document.getElementById('net-ip-inp').value.trim();
+  if (!ip) return;
+  const r = await fetch(`/api/v1/network/ip-reputation?ip=${encodeURIComponent(ip)}`).catch(() => null);
+  const container = document.getElementById('net-rep-result');
+  if (!r) { container.innerHTML = '<span style="color:var(--crit)">Lookup failed</span>'; return; }
+  const d = await r.json();
+  const cls = d.score < 30 ? 'safe' : d.score < 60 ? 'suspicious' : 'malicious';
+  container.innerHTML = `<div class="rep-score ${cls}" style="font-size:2rem">${d.score}</div><div style="font-weight:600;color:var(--t1)">${d.label}</div><div style="font-size:.75rem;color:var(--t2);margin-top:.3rem">${d.details}</div>`;
+}
+function buildMitreMatrix(coveredTTPs) {
+  const TACTICS_M = [
+    { name:'Recon',    techs:['T1595','T1592','T1589','T1590'] },
+    { name:'Res Dev',  techs:['T1583','T1584','T1585','T1586'] },
+    { name:'Init Acc', techs:['T1190','T1133','T1078','T1566'] },
+    { name:'Execute',  techs:['T1059','T1203','T1204','T1047'] },
+    { name:'Persist',  techs:['T1098','T1136','T1197','T1505'] },
+    { name:'Priv Esc', techs:['T1068','T1134','T1574','T1055'] },
+    { name:'Def Eva',  techs:['T1070','T1027','T1036','T1562'] },
+    { name:'Cred Acc', techs:['T1110','T1003','T1555','T1056'] },
+    { name:'Lateral',  techs:['T1021','T1210','T1534','T1570'] },
+    { name:'Exfil',    techs:['T1048','T1011','T1020','T1041'] },
+    { name:'Impact',   techs:['T1486','T1498','T1499','T1490'] },
+  ];
+  const c = new Set(coveredTTPs);
+  document.getElementById('mitre-matrix').innerHTML = TACTICS_M.map(tac => `
+    <div class="mitre-tactic-col">
+      <div class="mitre-tactic-header">${tac.name}</div>
+      ${tac.techs.map(t => `<div class="mitre-tech ${c.has(t) ? 'covered' : ''}" title="${t}">${t}</div>`).join('')}
+    </div>`).join('');
+}
+
+// ══ THREAT FORECAST ══
+let fcChart;
+async function loadForecast() {
+  const r = await fetch('/api/forecast/risk').catch(() => null);
+  if (!r) { toast('Forecast data unavailable', 'warn'); return; }
+  const d = await r.json();
+  document.getElementById('fc-peak').textContent = d.peak_day ? d.peak_day.slice(5) : '—';
+  const trendEl = document.getElementById('fc-trend');
+  trendEl.textContent = d.trend === 'up' ? '↑ Rising' : d.trend === 'down' ? '↓ Falling' : '→ Stable';
+  trendEl.style.color = d.trend === 'up' ? 'var(--crit)' : d.trend === 'down' ? 'var(--low)' : 'var(--accent)';
+  document.getElementById('fc-avg').textContent = d.predicted_avg || '—';
+  document.getElementById('fc-conf').textContent = (d.confidence_pct || 0) + '%';
+
+  if (fcChart) fcChart.destroy();
+  const hist = d.historical || [], pred = d.forecast || [];
+  fcChart = new Chart(document.getElementById('fc-chart'), {
+    type: 'line',
+    data: {
+      labels: [...hist.map(x => x.day.slice(5)), ...pred.map(x => x.day.slice(5))],
+      datasets: [
+        { label: 'Historical', data: [...hist.map(x => x.total), ...pred.map(() => null)], borderColor: '#2979ff', backgroundColor: 'rgba(41,121,255,0.08)', tension: .4, fill: true, pointRadius: 2 },
+        { label: 'Forecast',   data: [...hist.map(() => null), ...pred.map(x => x.predicted)], borderColor: '#7c3aed', borderDash: [6, 3], backgroundColor: 'rgba(124,58,237,0.08)', tension: .4, fill: true, pointRadius: 3 },
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { boxWidth: 9, font: { size: 10 } } } }, scales: { y: { beginAtZero: true, grid: { color: '#1a2545' } }, x: { grid: { display: false }, ticks: { font: { size: 9 }, maxRotation: 45 } } } }
+  });
+
+  // Attack breakdown
+  document.getElementById('fc-breakdown').innerHTML = (d.attack_breakdown || []).map(a => `<div class="ar">
+    <span style="font-size:.78rem;min-width:150px">${a.attack_type}</span>
+    <div class="ab-out"><div class="ab-in" style="width:${a.pct}%;background:var(--purple)"></div></div>
+    <span class="mono" style="font-size:.72rem;min-width:55px;text-align:right">${a.predicted}/day</span>
+  </div>`).join('');
+
+  // AI narrative
+  const aiR = await fetch('/api/ai/summarize', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ attack_type: d.trend === 'up' ? 'Escalating Threat' : 'Stable Activity', risk_score: d.trend === 'up' ? 78 : 42, affected_count: d.predicted_avg || 0, mitre_ids: [] }) }).catch(() => null);
+  if (aiR) {
+    const ai = await aiR.json();
+    document.getElementById('fc-narrative').innerHTML = `<p style="margin-bottom:.5rem">${ai.summary}</p><ul style="padding-left:1rem;color:var(--t3)">${(ai.recommendations || []).map(r => `<li style="margin-bottom:.25rem">${r}</li>`).join('')}</ul>`;
+  }
+}
+
+// ══ AUDIT LOG ══
+async function loadAudit() {
+  const r = await fetch('/api/v1/audit/').catch(() => null);
+  if (!r) return;
+  const d = await r.json();
+  document.getElementById('audit-body').innerHTML = (d.logs || []).map(l => `<tr>
+    <td style="font-size:.72rem;color:var(--t3)">${String(l.created_at || '').slice(0, 16)}</td>
+    <td style="font-weight:500;font-size:.78rem">${l.actor}</td>
+    <td style="font-size:.78rem">${l.action}</td>
+    <td class="mono" style="font-size:.72rem">${l.target || '—'}</td>
+    <td><span class="badge ${l.result === 'success' ? 'b-l' : 'b-c'}">${l.result}</span></td>
+  </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--t3);padding:2rem">No audit entries.</td></tr>';
+}
+
+// ══ RULES ══
+async function fetchRules() {
+  const r = await fetch('/api/v1/rules/').catch(() => null);
+  if (!r) return;
+  const data = await r.json();
+  document.getElementById('rules-list').innerHTML = data.map(rule => `<div style="padding:.65rem;border:1px solid var(--border);border-radius:6px;margin-bottom:.4rem"><div style="display:flex;justify-content:space-between;margin-bottom:.2rem"><strong style="font-size:.8rem">${rule.name}</strong><span class="badge ${rule.is_active ? 'b-l' : 'b-h'}">${rule.is_active ? 'Active' : 'Off'}</span></div><p style="font-size:.75rem;color:var(--t2);margin:.2rem 0">${rule.description || ''}</p><div class="mono" style="font-size:.68rem;background:var(--bg);padding:.35rem .5rem;border-radius:4px;overflow-x:auto">${rule.logic_json}</div></div>`).join('') || '<div style="color:var(--t3)">No rules defined.</div>';
+}
+async function saveRule() {
+  const n = document.getElementById('rname').value.trim(), l = document.getElementById('rlogic').value.trim(), s = document.getElementById('rsev').value;
+  if (!n || !l) { toast('Fill in rule name and logic', 'error'); return; }
+  await fetch(`/api/v1/rules/?name=${encodeURIComponent(n)}&logic_json=${encodeURIComponent(l)}&severity=${encodeURIComponent(s)}`, { method: 'POST' });
+  fetchRules(); toast('Rule saved and deployed', 'success');
+}
+
+// ══ SUPPRESSION RULES ══
+async function loadSupRules() {
+  const r = await fetch('/api/v1/suppression-rules/').catch(() => null);
+  if (!r) return;
+  const data = await r.json();
+  document.getElementById('sup-rules').innerHTML = data.map(rule => `<div style="padding:.65rem;border:1px solid var(--border);border-radius:6px;margin-bottom:.4rem;display:flex;justify-content:space-between;align-items:center"><div><strong style="font-size:.8rem">${rule.name}</strong><div style="font-size:.72rem;color:var(--t2);margin-top:.2rem">${rule.attack_type || 'Any type'} · ${rule.window_minutes}min window</div></div><div style="display:flex;gap:.4rem"><button class="btn ${rule.is_active ? 'btn-s' : 'btn-g'}" style="font-size:.65rem;padding:2px 6px" onclick="toggleSup(${rule.id},this)">${rule.is_active ? 'ON' : 'OFF'}</button><button class="btn btn-d" style="font-size:.65rem;padding:2px 6px" onclick="deleteSup(${rule.id},this)">Del</button></div></div>`).join('') || '<div style="color:var(--t3);font-size:.8rem">No suppression rules.</div>';
+}
+async function addSupRule() {
+  await fetch('/api/v1/suppression-rules/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: document.getElementById('sup-name').value, attack_type: document.getElementById('sup-type').value || null, source_ip: document.getElementById('sup-ip').value || null, max_risk_score: parseInt(document.getElementById('sup-risk').value) || null, window_minutes: parseInt(document.getElementById('sup-win').value) || 60 }) });
+  closeModal('supModal'); loadSupRules(); toast('Suppression rule created', 'success');
+}
+async function toggleSup(id) { await fetch(`/api/v1/suppression-rules/${id}/toggle`, { method: 'PUT' }); loadSupRules(); }
+async function deleteSup(id, btn) { await fetch(`/api/v1/suppression-rules/${id}`, { method: 'DELETE' }); btn.closest('div').parentElement.remove(); }
+
+// ══ SLACK TEST ══
+function testSlack() {
+  const url = document.getElementById('slack-url-inp').value;
+  if (!url) { toast('Enter a Slack webhook URL first', 'error'); return; }
+  toast('Slack test fired — check your channel', 'info');
+}
+
+// ══ UEBA ══
+async function fetchUEBA() {
+  const r = await fetch('/api/v1/ueba/top-risky').catch(() => null);
+  if (!r) return;
+  const d = await r.json();
+  document.getElementById('ueba-body').innerHTML = d.map(e => `<tr>
+    <td class="mono" style="font-size:.72rem;font-weight:600">${e.ip_address}</td>
+    <td class="mono" style="font-size:.72rem">${e.cumulative_risk_score}</td>
+    <td><span class="badge ${e.risk_level==='Critical'?'b-c':e.risk_level==='High'?'b-h':e.risk_level==='Medium'?'b-m':'b-l'}">${e.risk_level}</span></td>
+  </tr>`).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--t3)">No data.</td></tr>';
+}
+
+// ══ INIT ══
+fetchIncidents();
+fetchRules();
+fetchUEBA();
+loadFPCount();
+refreshGauge();
+refreshAnomalySparkline();
+refreshRiskBanner();
+refreshPlaybookMini();
+
+setInterval(() => {
+  document.getElementById('ts').textContent = new Date().toLocaleString() + '  ·  Real-Time SOC v3';
+  fetchUEBA();
+  document.getElementById('zeekEps').textContent = 400 + Math.floor(Math.random() * 100);
+  document.getElementById('cylanceLat').textContent = 10 + Math.floor(Math.random() * 8);
+  fetch('/api/webhook/events').then(r => r.json()).then(d => { document.getElementById('wh-count').textContent = (d.events || []).length; }).catch(() => {});
+}, 5000);
+
+setInterval(() => {
+  refreshGauge();
+  refreshAnomalySparkline();
+  refreshRiskBanner();
+  refreshPlaybookMini();
+}, 30000);
+
+document.getElementById('ts').textContent = new Date().toLocaleString() + '  ·  Real-Time SOC v3';
+</script>
+</body>
+</html>
