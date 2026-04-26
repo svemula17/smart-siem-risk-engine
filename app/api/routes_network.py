@@ -1,8 +1,10 @@
 """
 Network Intelligence Routes — Subnet behavior analysis, IP reputation scoring.
 """
-from collections import defaultdict
+from collections import Counter, defaultdict
 from fastapi import APIRouter
+
+import httpx
 
 from app.database import SessionLocal
 from app.models.db_models import (
@@ -11,6 +13,9 @@ from app.models.db_models import (
 )
 
 router = APIRouter()
+
+# In-memory cache for GeoIP lookups: ip -> {country, country_code, lat, lon, city}
+_GEOIP_CACHE: dict = {}
 
 
 def _subnet(ip: str) -> str:
@@ -161,6 +166,97 @@ def get_ip_reputation(ip: str):
             "label": label,
             "country": "—",   # no external GeoIP call here (use cached if available)
             "details": " | ".join(details_parts),
+        }
+    finally:
+        db.close()
+
+
+def _is_public_ip(ip: str) -> bool:
+    if not ip or "." not in ip:
+        return False
+    parts = ip.split(".")
+    if len(parts) != 4:
+        return False
+    try:
+        a = int(parts[0]); b = int(parts[1])
+    except ValueError:
+        return False
+    if a == 10 or a == 127 or a == 0 or a >= 224:
+        return False
+    if a == 172 and 16 <= b <= 31:
+        return False
+    if a == 192 and b == 168:
+        return False
+    if a == 169 and b == 254:
+        return False
+    return True
+
+
+def _lookup_geoip(ip: str) -> dict:
+    if ip in _GEOIP_CACHE:
+        return _GEOIP_CACHE[ip]
+    result = {"ip": ip, "country": "Unknown", "country_code": "??", "lat": None, "lon": None, "city": None}
+    if not _is_public_ip(ip):
+        result["country"] = "Private"
+        result["country_code"] = "RFC1918"
+        _GEOIP_CACHE[ip] = result
+        return result
+    try:
+        r = httpx.get(
+            f"http://ip-api.com/json/{ip}",
+            params={"fields": "status,country,countryCode,city,lat,lon"},
+            timeout=2.5,
+        )
+        if r.status_code == 200:
+            d = r.json()
+            if d.get("status") == "success":
+                result.update({
+                    "country": d.get("country") or "Unknown",
+                    "country_code": d.get("countryCode") or "??",
+                    "lat": d.get("lat"),
+                    "lon": d.get("lon"),
+                    "city": d.get("city"),
+                })
+    except Exception:
+        pass
+    _GEOIP_CACHE[ip] = result
+    return result
+
+
+@router.get("/api/v1/network/geoip")
+def get_geoip_map(top: int = 30):
+    """Aggregate top source IPs and resolve them to coordinates for the map."""
+    db = SessionLocal()
+    try:
+        rows = db.query(NormalizedAlertDB.source_ip).filter(
+            NormalizedAlertDB.source_ip.isnot(None)
+        ).limit(20000).all()
+        counts: Counter = Counter(ip for (ip,) in rows if ip)
+        top_ips = counts.most_common(top)
+
+        points = []
+        country_counts: Counter = Counter()
+        for ip, n in top_ips:
+            geo = _lookup_geoip(ip)
+            country_counts[geo["country"]] += n
+            if geo.get("lat") is not None:
+                points.append({
+                    "ip": ip,
+                    "alert_count": n,
+                    "country": geo["country"],
+                    "country_code": geo["country_code"],
+                    "city": geo.get("city"),
+                    "lat": geo["lat"],
+                    "lon": geo["lon"],
+                })
+        return {
+            "total_unique_ips": len(counts),
+            "resolved_points": len(points),
+            "points": points,
+            "top_countries": [
+                {"country": c, "alerts": n}
+                for c, n in country_counts.most_common(10)
+            ],
         }
     finally:
         db.close()

@@ -221,6 +221,8 @@ textarea.inp{resize:vertical}select.inp{cursor:pointer}
     <div class="ni" data-tab="compliance" onclick="sw('compliance',this)"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>Compliance</span></div>
     <div class="ni" data-tab="playbooks"  onclick="sw('playbooks',this)"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg><span>Playbooks</span><span class="nb" id="pb-badge" style="background:var(--pb);color:var(--purple)">0</span></div>
     <div class="ni card-ai" data-tab="ml" onclick="sw('ml',this)"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg><span>ML Insights</span></div>
+    <div class="ni" data-tab="mitremap"   onclick="sw('mitremap',this)"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="6" height="6"/><rect x="15" y="3" width="6" height="6"/><rect x="9" y="9" width="6" height="6"/><rect x="3" y="15" width="6" height="6"/><rect x="15" y="15" width="6" height="6"/></svg><span>MITRE Heatmap</span></div>
+    <div class="ni" data-tab="geomap"     onclick="sw('geomap',this)"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><span>Geo Map</span></div>
     <div class="ni" data-tab="netintel"   onclick="sw('netintel',this)"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="8" height="8" rx="1"/></svg><span>Network Intel</span></div>
     <div class="ni" data-tab="forecast"   onclick="sw('forecast',this)"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span>Threat Forecast</span></div>
     <div class="ns" style="margin-top:.4rem">Platform</div>
@@ -374,11 +376,47 @@ textarea.inp{resize:vertical}select.inp{cursor:pointer}
 
 <!-- ══════════════════════════ INCIDENTS ══════════════════════════ -->
 <div id="tab-incidents" class="tab-content">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.85rem">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.85rem;gap:.5rem;flex-wrap:wrap">
     <h2 style="font-size:1.05rem;font-weight:700">Incident Management</h2>
-    <button class="btn btn-p" onclick="fetchIncidents()">Refresh</button>
+    <div style="display:flex;gap:.4rem;align-items:center">
+      <span id="inc-sel-count" style="font-size:.72rem;color:var(--t3)">0 selected</span>
+      <button class="btn btn-g" onclick="bulkCloseIncidents()">✓ Close Selected</button>
+      <button class="btn btn-p" onclick="fetchIncidents()">Refresh</button>
+    </div>
   </div>
-  <div class="card" style="padding:0;overflow:hidden"><table><thead><tr><th>ID</th><th>Title</th><th>Severity</th><th>Status</th><th>Created</th><th>AI Summary</th><th>Report</th></tr></thead><tbody id="inc-body"><tr><td colspan="7" style="text-align:center;color:var(--t3);padding:2rem">Loading…</td></tr></tbody></table></div>
+  <div class="card" style="padding:0;overflow:hidden"><table><thead><tr><th style="width:28px"><input type="checkbox" id="inc-sel-all" onclick="toggleSelectAllIncidents(this.checked)"></th><th>ID</th><th>Title</th><th>Severity</th><th>Status</th><th>Created</th><th>SLA</th><th>AI Summary</th><th>Report</th></tr></thead><tbody id="inc-body"><tr><td colspan="9" style="text-align:center;color:var(--t3);padding:2rem">Loading…</td></tr></tbody></table></div>
+</div>
+
+<!-- ══════════════════════════ MITRE HEATMAP ══════════════════════════ -->
+<div id="tab-mitremap" class="tab-content">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.85rem">
+    <h2 style="font-size:1.05rem;font-weight:700">MITRE ATT&CK Heatmap</h2>
+    <button class="btn btn-p" onclick="loadMitreHeatmap()">Refresh</button>
+  </div>
+  <div class="g3" style="margin-bottom:.85rem">
+    <div class="kc"><div class="kl">Unique Techniques</div><div class="kv" id="mh-techs">—</div></div>
+    <div class="kc"><div class="kl">Total TTP Hits</div><div class="kv" id="mh-hits">—</div></div>
+    <div class="kc"><div class="kl">Peak Frequency</div><div class="kv" id="mh-peak">—</div></div>
+  </div>
+  <div class="card"><div id="mh-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.75rem"><div style="color:var(--t3);text-align:center;padding:2rem">Loading…</div></div></div>
+</div>
+
+<!-- ══════════════════════════ GEO MAP ══════════════════════════ -->
+<div id="tab-geomap" class="tab-content">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.85rem">
+    <h2 style="font-size:1.05rem;font-weight:700">Source IP Geographic Distribution</h2>
+    <button class="btn btn-p" onclick="loadGeoMap()">Refresh</button>
+  </div>
+  <div class="g3" style="margin-bottom:.85rem">
+    <div class="kc"><div class="kl">Unique Source IPs</div><div class="kv" id="gm-uniq">—</div></div>
+    <div class="kc"><div class="kl">Resolved Locations</div><div class="kv" id="gm-res">—</div></div>
+    <div class="kc"><div class="kl">Top Country</div><div class="kv" id="gm-top" style="font-size:1rem">—</div></div>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden"><div id="geomap-canvas" style="height:480px"></div></div>
+  <div class="card" style="margin-top:.85rem">
+    <div class="ch"><span class="ct">Top Countries</span></div>
+    <div id="gm-countries" style="font-size:.8rem;color:var(--t2)">Loading…</div>
+  </div>
 </div>
 
 <!-- ══════════════════════════ ALERTS ══════════════════════════ -->
@@ -851,6 +889,7 @@ const TAB_TITLES = {
   ioc:'IOC Manager', compliance:'Compliance & SLA',
   playbooks:'Automated Playbooks', ml:'ML Insights & Model Metrics',
   netintel:'Network Intelligence', forecast:'Threat Forecast (7-Day)',
+  mitremap:'MITRE ATT&CK Heatmap', geomap:'Geo Threat Map',
   sources:'Data Connectors', audit:'Audit Log', settings:'Platform Settings'
 };
 function sw(id, el) {
@@ -873,6 +912,8 @@ function sw(id, el) {
     playbooks: loadPlaybooks,
     ml: loadMLInsights,
     netintel: loadNetworkIntel,
+    mitremap: loadMitreHeatmap,
+    geomap: loadGeoMap,
     forecast: loadForecast,
   };
   if (on[id]) on[id]();
@@ -1190,16 +1231,44 @@ async function fetchIncidents() {
   document.getElementById('inc-badge').textContent = open.length;
   document.getElementById('inc-body').innerHTML = data.map(inc => {
     const cls = inc.severity === 'Critical' ? 'b-c' : inc.severity === 'High' ? 'b-h' : 'b-m';
+    const sla = inc.sla || {};
+    const slaColor = sla.sla_status === 'breached' ? '#e74c3c' : sla.sla_status === 'warning' ? '#f39c12' : sla.sla_status === 'met' ? '#2ecc71' : 'var(--low)';
+    const slaLabel = sla.sla_status === 'breached' ? '⚠ BREACH' : sla.sla_status === 'warning' ? '◐ ' + (sla.breach_pct||0).toFixed(0) + '%' : sla.sla_status === 'met' ? '✓ Met' : '✓ ' + (sla.breach_pct||0).toFixed(0) + '%';
+    const slaTitle = `Elapsed ${(sla.elapsed_hours||0).toFixed(1)}h / SLA ${sla.threshold_hours||'?'}h`;
     return `<tr style="cursor:pointer" onclick="openInc('${inc.id}')">
+      <td onclick="event.stopPropagation()"><input type="checkbox" class="inc-cb" data-id="${inc.id}" onchange="updateIncSelCount()"></td>
       <td class="mono" style="font-size:.72rem">${inc.id.slice(0, 8)}…</td>
       <td style="font-weight:500">${inc.title}</td>
       <td><span class="badge ${cls}">${inc.severity}</span></td>
       <td>${inc.status}</td>
       <td style="color:var(--t3);font-size:.72rem">${new Date(inc.created_at).toLocaleString()}</td>
+      <td title="${slaTitle}"><span style="font-size:.7rem;font-weight:600;color:${slaColor}">${slaLabel}</span></td>
       <td><button class="btn btn-purple" style="font-size:.65rem;padding:2px 6px" onclick="aiSumInc(event,'${inc.id}','${inc.severity}')">🤖 AI</button></td>
       <td><a class="btn btn-g" style="font-size:.65rem;padding:2px 6px" href="/api/v1/incidents/${inc.id}/report" download onclick="event.stopPropagation()">⬇ Download</a></td>
     </tr>`;
-  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--t3);padding:2rem">No incidents.</td></tr>';
+  }).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--t3);padding:2rem">No incidents.</td></tr>';
+  updateIncSelCount();
+}
+
+function toggleSelectAllIncidents(checked) {
+  document.querySelectorAll('.inc-cb').forEach(cb => cb.checked = checked);
+  updateIncSelCount();
+}
+function updateIncSelCount() {
+  const n = document.querySelectorAll('.inc-cb:checked').length;
+  const el = document.getElementById('inc-sel-count');
+  if (el) el.textContent = `${n} selected`;
+}
+async function bulkCloseIncidents() {
+  const ids = [...document.querySelectorAll('.inc-cb:checked')].map(cb => cb.dataset.id);
+  if (!ids.length) { toast('No incidents selected', 'warn'); return; }
+  if (!confirm(`Close ${ids.length} incident(s)?`)) return;
+  const r = await fetch('/api/v1/incidents/bulk/close', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ incident_ids: ids, user: 'Admin' })
+  }).catch(() => null);
+  if (r) { const d = await r.json(); toast(`Closed ${d.count} incident(s)`, 'success'); fetchIncidents(); }
+  else toast('Bulk close failed', 'error');
 }
 
 async function openInc(id) {
@@ -1236,6 +1305,57 @@ async function aiSumInc(e, id, sev) {
 function downloadIncReport() {
   if (!curInc) return;
   window.open(`/api/v1/incidents/${curInc}/report`, '_blank');
+}
+
+// ══ MITRE HEATMAP ══
+async function loadMitreHeatmap() {
+  const grid = document.getElementById('mh-grid');
+  grid.innerHTML = '<div style="color:var(--t3);text-align:center;padding:2rem">Loading…</div>';
+  const r = await fetch('/api/v1/mitre/heatmap').catch(() => null);
+  if (!r) { grid.innerHTML = '<div style="color:var(--t3);text-align:center;padding:2rem">Unavailable</div>'; return; }
+  const d = await r.json();
+  document.getElementById('mh-techs').textContent = d.total_techniques;
+  document.getElementById('mh-hits').textContent = d.total_alerts_with_ttp;
+  document.getElementById('mh-peak').textContent = d.max_count;
+  const cellHtml = (t) => {
+    const intensity = t.intensity || 0;
+    const bg = `rgba(231, 76, 60, ${0.15 + intensity * 0.7})`;
+    return `<div style="background:${bg};padding:.4rem .55rem;border-radius:4px;font-size:.72rem;display:flex;justify-content:space-between;gap:.4rem;align-items:center;border:1px solid rgba(231,76,60,.25)"><span class="mono" style="font-weight:600">${t.id}</span><span style="font-weight:700">${t.count}</span></div>`;
+  };
+  grid.innerHTML = d.tactics.map(tac => `
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.75rem">
+      <div style="font-size:.78rem;font-weight:700;color:var(--t2);margin-bottom:.55rem;text-transform:uppercase;letter-spacing:.04em">${tac.name}</div>
+      ${tac.techniques.length ? tac.techniques.map(cellHtml).join('') : '<div style="color:var(--t3);font-size:.72rem">No activity</div>'}
+    </div>`).join('');
+}
+
+// ══ GEO MAP ══
+let _geoMap = null;
+async function loadGeoMap() {
+  const r = await fetch('/api/v1/network/geoip?top=50').catch(() => null);
+  if (!r) { toast('Geo map unavailable', 'error'); return; }
+  const d = await r.json();
+  document.getElementById('gm-uniq').textContent = d.total_unique_ips;
+  document.getElementById('gm-res').textContent = d.resolved_points;
+  document.getElementById('gm-top').textContent = (d.top_countries[0] && d.top_countries[0].country) || '—';
+  document.getElementById('gm-countries').innerHTML = d.top_countries.map(c =>
+    `<div style="display:flex;justify-content:space-between;padding:.3rem 0;border-bottom:1px dashed var(--border)"><span>${c.country}</span><span style="color:var(--t3)">${c.alerts} alerts</span></div>`
+  ).join('') || '<div style="color:var(--t3)">No data</div>';
+
+  if (!_geoMap) {
+    _geoMap = L.map('geomap-canvas', { center: [20, 0], zoom: 2, attributionControl: false });
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 18 }).addTo(_geoMap);
+  } else {
+    _geoMap.eachLayer(l => { if (l instanceof L.CircleMarker) _geoMap.removeLayer(l); });
+  }
+  setTimeout(() => _geoMap.invalidateSize(), 100);
+  const maxCount = Math.max(...d.points.map(p => p.alert_count), 1);
+  d.points.forEach(p => {
+    const radius = 4 + (p.alert_count / maxCount) * 18;
+    L.circleMarker([p.lat, p.lon], {
+      radius, color: '#e74c3c', fillColor: '#e74c3c', fillOpacity: 0.55, weight: 1.5
+    }).addTo(_geoMap).bindPopup(`<b>${p.ip}</b><br>${p.city || ''} ${p.country}<br>Alerts: ${p.alert_count}`);
+  });
 }
 
 async function resolveInc() {
