@@ -30,9 +30,24 @@ Modern Security Operations Centers (SOCs) are overwhelmed with alert fatigue —
 - **Automated Response** — SOAR playbook engine that blocks IPs, suppresses duplicates, and fires Slack alerts
 - **UEBA** — Tracks entity behavior over time to detect slow-burn attackers that evade threshold-based rules
 - **AI-Assisted Analysis** — Claude AI generates natural-language incident summaries, attack explanations, and threat forecast narratives
-- **Live Dashboard** — 15-tab professional analyst interface with WebSocket streaming, MITRE coverage matrix, threat forecasting, and ML insights
+- **Live Dashboard** — 17-tab professional analyst interface with WebSocket streaming, MITRE coverage matrix, threat forecasting, and ML insights
 
 This is not a toy — it reflects how real threat detection pipelines are engineered.
+
+---
+
+## ✨ What's New (v3.1)
+
+- **🤖 AI Investigator Chat** — Floating chat panel that answers analyst questions grounded in live SIEM data via Claude (`POST /api/ai/chat`)
+- **🔎 Pivot Search** — Click any IP or alert ID to see every related artifact in one modal: alerts, incidents, IOC hits, block history, UEBA profile, attack breakdown (`GET /api/v1/pivot/{type}/{value}`)
+- **⚡ Quick-Action Toolbar** — Each alert row exposes one-click 🚫 Block IP, 🎯 Add to IOC, 🚨 Create Incident, and FP buttons
+- **🗺️ Geo Threat Map** — World map of attacker source IPs with country aggregation, served from `/api/v1/network/geoip`
+- **🔥 MITRE ATT&CK Heatmap** — Tactic-grouped technique frequency view with intensity-shaded cells (`GET /api/v1/mitre/heatmap`)
+- **⏱️ SLA Tracking** — Per-incident time-to-resolve badges (Critical 1h · High 4h · Medium 24h · Low 72h) with ok/warning/breached states
+- **📦 Bulk Incident Ops** — Select-all checkbox + "Close Selected" for incident triage at scale
+- **📄 Downloadable Incident Reports** — Per-incident HTML report with built-in Print/Save-as-PDF (`GET /api/v1/incidents/{id}/report`)
+- **🔁 Replay-on-Refresh** — Refreshing `/dashboard` resets state and re-runs the pipeline so alerts stream in one-by-one (great for demos; disable with `?replay=0`)
+- **🎬 Auto-start Pipeline** — `uvicorn app.main:app` now spawns the alert pipeline as a background subprocess on boot (disable with `AUTO_PIPELINE=0`)
 
 ---
 
@@ -133,20 +148,22 @@ This is not a toy — it reflects how real threat detection pipelines are engine
 │                                             │                                   │
 │                                             ▼                                   │
 │                      ┌──────────────────────────────────────────────────────┐  │
-│                      │              FastAPI Backend (21 Routers)            │  │
+│                      │              FastAPI Backend (23 Routers)            │  │
 │                      │  /api/alerts  /api/ml  /api/forecast  /api/playbooks │  │
 │                      │  /api/ueba    /api/ioc  /api/network  /api/incidents  │  │
 │                      │  /api/rules   /api/ai   /api/compliance /api/audit   │  │
-│                      │  /api/metrics /api/export /api/webhook  /ws/dashboard│  │
+│                      │  /api/mitre   /api/pivot /api/metrics  /api/export   │  │
+│                      │  /api/webhook /ws/dashboard                          │  │
 │                      └──────────────────────┬───────────────────────────────┘  │
 │                                             │                                   │
 │                                             ▼                                   │
 │                      ┌──────────────────────────────────────────────────────┐  │
-│                      │         Live Operations Dashboard (15 Tabs)          │  │
+│                      │         Live Operations Dashboard (17 Tabs)          │  │
 │                      │  Dashboard │ Alerts │ Incidents │ Threat Hunt        │  │
 │                      │  UEBA      │ Rules  │ IOC       │ Compliance         │  │
 │                      │  Audit     │ Geo Map│ Playbooks │ ML Insights        │  │
-│                      │  Network Intelligence           │ Threat Forecast    │  │
+│                      │  Network Intelligence │ Threat Forecast              │  │
+│                      │  MITRE Heatmap        │ Geo Threat Map               │  │
 │                      └──────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -193,7 +210,7 @@ After scoring, the `MLEngine.predict_anomaly_with_score()` method runs the alert
 
 ## 📊 Dashboard & UI
 
-The operations dashboard is a single-page application served at `/dashboard` with 15 analyst tabs, a command bar, and real-time WebSocket streaming. No framework dependencies — pure HTML5, CSS custom properties, and Vanilla JS.
+The operations dashboard is a single-page application served at `/dashboard` with 17 analyst tabs, a command bar, and real-time WebSocket streaming. No framework dependencies — pure HTML5, CSS custom properties, and Vanilla JS.
 
 ### Tabs at a Glance
 
@@ -214,6 +231,8 @@ The operations dashboard is a single-page application served at `/dashboard` wit
 | **ML Insights** | Anomaly rate trend, feature importance bars, DBSCAN cluster cards, FP feedback history, Retrain button |
 | **Network Intelligence** | Suspicious /24 subnet table, IP reputation lookup, MITRE ATT&CK coverage matrix |
 | **Threat Forecast** | 30-day historical + 7-day predicted chart, attack breakdown bars, Claude AI narrative |
+| **MITRE Heatmap** | Tactic-grouped technique frequency grid with intensity-shaded cells |
+| **Geo Threat Map** | Leaflet world map of attacker source IPs aggregated by country (live GeoIP lookup) |
 
 ### UI Design
 - **Dark theme**: Deep navy (`#060b18`) background, indigo sidebar (`#0d1033`), electric blue accents (`#2979ff`), crimson critical (`#e8294a`), violet AI elements (`#7c3aed`)
@@ -266,7 +285,7 @@ smart-siem-risk-engine/
 │   ├── utils.py                       # Shared helpers (IP validation, timestamp utils)
 │   ├── websockets.py                  # WebSocket manager for live dashboard streaming
 │   │
-│   ├── api/                           # 21 FastAPI route modules
+│   ├── api/                           # 23 FastAPI route modules
 │   │   ├── routes_alerts.py           # Alert ingestion + retrieval
 │   │   ├── routes_ai.py               # Claude AI summary + explanation endpoints
 │   │   ├── routes_audit.py            # Audit log query
@@ -279,8 +298,10 @@ smart-siem-risk-engine/
 │   │   ├── routes_incidents.py        # Incident lifecycle CRUD
 │   │   ├── routes_ioc.py              # IOC feed management
 │   │   ├── routes_metrics.py          # KPI aggregates
+│   │   ├── routes_mitre.py            # MITRE ATT&CK heatmap aggregation
 │   │   ├── routes_ml.py               # ML stats + FP-driven retrain
-│   │   ├── routes_network.py          # Subnet behavior + IP reputation
+│   │   ├── routes_network.py          # Subnet behavior + IP reputation + GeoIP
+│   │   ├── routes_pivot.py            # Cross-entity pivot (IP/alert/host)
 │   │   ├── routes_playbooks.py        # Playbook CRUD + execution log
 │   │   ├── routes_reports.py          # PDF report generation
 │   │   ├── routes_reset.py            # Dev: reset database
@@ -346,7 +367,7 @@ smart-siem-risk-engine/
 │   │   └── exporters.py               # CSV/JSON data exporters
 │   │
 │   └── templates/
-│       └── dashboard.html             # Full SPA dashboard (15 tabs, ~1800 lines)
+│       └── dashboard.html             # Full SPA dashboard (17 tabs, ~2200 lines)
 │
 ├── data/
 │   ├── iforest_model.pkl              # Serialized trained Isolation Forest model
@@ -547,5 +568,5 @@ This project is licensed under the **MIT License** — see [LICENSE](LICENSE) fo
 ---
 
 <p align="center">
-  <sub>SmartSIEM v3.0.0 — Built from scratch. No black boxes.</sub>
+  <sub>SmartSIEM v3.1.0 — Built from scratch. No black boxes.</sub>
 </p>
