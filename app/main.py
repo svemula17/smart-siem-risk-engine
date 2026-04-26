@@ -1,3 +1,8 @@
+import os
+import subprocess
+import sys
+from pathlib import Path
+
 from fastapi import FastAPI
 from sqlalchemy import text
 
@@ -84,3 +89,61 @@ app.include_router(playbooks_router,   tags=["Playbooks"])
 app.include_router(network_router,     tags=["Network"])
 app.include_router(mitre_router,       tags=["MITRE"])
 app.include_router(pivot_router,       tags=["Pivot"])
+
+
+# ── Background alert pipeline control ──
+# Auto-runs on server boot AND on every /dashboard refresh so alerts stream in
+# one-by-one via WebSocket. Set AUTO_PIPELINE=0 to disable auto-boot.
+_pipeline_proc: "subprocess.Popen | None" = None
+
+
+def pipeline_is_running() -> bool:
+    return _pipeline_proc is not None and _pipeline_proc.poll() is None
+
+
+def stop_pipeline() -> None:
+    global _pipeline_proc
+    if pipeline_is_running():
+        _pipeline_proc.terminate()
+        try:
+            _pipeline_proc.wait(timeout=5)
+        except Exception:
+            _pipeline_proc.kill()
+    _pipeline_proc = None
+
+
+def launch_pipeline() -> bool:
+    """Spawn run.py as a background subprocess. No-op if already running."""
+    global _pipeline_proc
+    if pipeline_is_running():
+        return False
+    project_root = Path(__file__).resolve().parent.parent
+    run_script = project_root / "run.py"
+    if not run_script.exists():
+        return False
+    log_path = project_root / "pipeline.log"
+    try:
+        log_f = open(log_path, "ab", buffering=0)
+        _pipeline_proc = subprocess.Popen(
+            [sys.executable, str(run_script)],
+            cwd=str(project_root),
+            stdout=log_f,
+            stderr=subprocess.STDOUT,
+            env={**os.environ, "PYTHONUNBUFFERED": "1"},
+        )
+        print(f"[pipeline] launched (pid={_pipeline_proc.pid}) — logs: {log_path}")
+        return True
+    except Exception as e:
+        print(f"[pipeline] failed to launch: {e}")
+        return False
+
+
+@app.on_event("startup")
+def _on_startup():
+    if os.getenv("AUTO_PIPELINE", "1") != "0":
+        launch_pipeline()
+
+
+@app.on_event("shutdown")
+def _on_shutdown():
+    stop_pipeline()
