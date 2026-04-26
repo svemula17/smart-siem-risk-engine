@@ -32,10 +32,39 @@ def api_docs(request: Request):
 
 
 @router.get("/dashboard", response_class=HTMLResponse)
-def dashboard(request: Request):
+def dashboard(request: Request, replay: int = 1):
     token = request.cookies.get("session_token")
     if not token or not token.startswith("authenticated_"):
         return RedirectResponse(url="/login")
+
+    # ── Replay-on-refresh: every dashboard GET triggers a fresh pipeline run
+    #    so alerts stream in one-by-one via WebSocket. Disable with ?replay=0.
+    if replay:
+        try:
+            from app import main as _app_main
+            from app.models.db_models import (
+                IncidentDB, IncidentTimelineDB, IPEntityProfileDB,
+                AlertGroupDB, SuppressedAlertDB,
+            )
+            _app_main.stop_pipeline()
+            _db = SessionLocal()
+            try:
+                _db.query(NormalizedAlertDB).delete()
+                _db.query(ScoredAlertDB).delete()
+                _db.query(EvaluationResultDB).delete()
+                _db.query(BlockedIPDB).delete()
+                _db.query(RawAlertDB).delete()
+                _db.query(IncidentTimelineDB).delete()
+                _db.query(IncidentDB).delete()
+                _db.query(IPEntityProfileDB).delete()
+                _db.query(AlertGroupDB).delete()
+                _db.query(SuppressedAlertDB).delete()
+                _db.commit()
+            finally:
+                _db.close()
+            _app_main.launch_pipeline()
+        except Exception as e:
+            print(f"[dashboard] replay trigger failed: {e}")
 
     db = SessionLocal()
     try:
