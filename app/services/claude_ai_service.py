@@ -157,6 +157,58 @@ def _fallback_summary(attack_type, risk_score, source_ip, affected_count, mitre_
     }
 
 
+def investigator_chat(question: str, context: dict) -> dict:
+    """
+    Answer a SOC analyst question grounded in the provided context dict.
+    Uses Claude when ANTHROPIC_API_KEY is set, otherwise produces a deterministic
+    summary from the context.
+    """
+    if ANTHROPIC_API_KEY:
+        try:
+            import anthropic
+            client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+            import json as _json
+            ctx_text = _json.dumps(context, default=str)[:6000]
+            prompt = (
+                "You are a SOC investigator. Answer the analyst's question using ONLY the JSON context. "
+                "Be concise (≤6 bullet points). If the context lacks info, say so.\n\n"
+                f"Context:\n{ctx_text}\n\nQuestion: {question}"
+            )
+            msg = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=600,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            return {"answer": msg.content[0].text, "source": "claude-ai"}
+        except Exception as e:
+            logger.warning("Claude chat failed: %s", e)
+
+    # Fallback: deterministic context summary
+    parts = []
+    if "totals" in context:
+        t = context["totals"]
+        parts.append(
+            f"Last {t.get('hours', 24)}h: {t.get('alerts', 0)} alerts, "
+            f"{t.get('incidents', 0)} incidents, {t.get('high_risk', 0)} high-risk."
+        )
+    if context.get("top_attacks"):
+        parts.append("Top attack types: " + ", ".join(
+            f"{a['attack_type']} ({a['count']})" for a in context["top_attacks"][:5]
+        ))
+    if context.get("top_ips"):
+        parts.append("Top source IPs: " + ", ".join(
+            f"{a['ip']}({a['count']})" for a in context["top_ips"][:5]
+        ))
+    if context.get("recent_incidents"):
+        parts.append("Recent incidents:\n" + "\n".join(
+            f"- [{i['severity']}] {i['title']}" for i in context["recent_incidents"][:5]
+        ))
+    return {
+        "answer": "\n".join(parts) or "No data available to answer that.",
+        "source": "rule-based",
+    }
+
+
 def explain_attack_type(attack_type: str) -> str:
     """Return a plain-English explanation of an attack type."""
     explanations = {

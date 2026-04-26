@@ -12,7 +12,7 @@ from app.models.db_models import (
     FalsePositiveDB, NormalizedAlertDB, ScoredAlertDB,
 )
 from app.services.claude_ai_service import (
-    explain_attack_type, generate_incident_summary,
+    explain_attack_type, generate_incident_summary, investigator_chat,
 )
 from app.services.audit_logger import log_action
 
@@ -44,6 +44,50 @@ def summarize_incident(req: SummarizeRequest):
         mitre_ids=req.mitre_ids,
     )
     return result
+
+
+class ChatRequest(BaseModel):
+    question: str
+
+
+@router.post("/api/ai/chat")
+def ai_chat(req: ChatRequest):
+    """AI investigator: answers questions grounded in current SIEM data."""
+    from collections import Counter
+    db = SessionLocal()
+    try:
+        scored = db.query(ScoredAlertDB).order_by(desc(ScoredAlertDB.id)).limit(500).all()
+        norms = db.query(NormalizedAlertDB).order_by(desc(NormalizedAlertDB.id)).limit(500).all()
+        from app.models.db_models import IncidentDB as _Inc
+        incidents = db.query(_Inc).order_by(desc(_Inc.created_at)).limit(20).all()
+
+        attack_counts = Counter(n.attack_type or "Unknown" for n in norms)
+        ip_counts = Counter(n.source_ip for n in norms if n.source_ip)
+        high_risk = sum(1 for s in scored if s.risk_score >= 70)
+
+        context = {
+            "totals": {
+                "alerts": len(scored),
+                "incidents": len(incidents),
+                "high_risk": high_risk,
+                "hours": 24,
+            },
+            "top_attacks": [
+                {"attack_type": k, "count": v}
+                for k, v in attack_counts.most_common(8)
+            ],
+            "top_ips": [
+                {"ip": k, "count": v} for k, v in ip_counts.most_common(8)
+            ],
+            "recent_incidents": [
+                {"id": i.id, "title": i.title, "severity": i.severity,
+                 "status": i.status, "created_at": i.created_at}
+                for i in incidents
+            ],
+        }
+        return investigator_chat(req.question, context)
+    finally:
+        db.close()
 
 
 @router.get("/api/ai/explain/{attack_type}")

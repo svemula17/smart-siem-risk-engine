@@ -23,6 +23,7 @@ from app.api.routes_forecast import router as forecast_router
 from app.api.routes_playbooks import router as playbooks_router
 from app.api.routes_network import router as network_router
 from app.api.routes_mitre import router as mitre_router
+from app.api.routes_pivot import router as pivot_router
 
 from app.database import Base, engine
 
@@ -82,3 +83,4 @@ app.include_router(forecast_router,    tags=["Forecast"])
 app.include_router(playbooks_router,   tags=["Playbooks"])
 app.include_router(network_router,     tags=["Network"])
 app.include_router(mitre_router,       tags=["MITRE"])
+app.include_router(pivot_router,       tags=["Pivot"])

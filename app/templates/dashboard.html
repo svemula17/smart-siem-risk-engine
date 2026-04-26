@@ -197,6 +197,19 @@ textarea.inp{resize:vertical}select.inp{cursor:pointer}
 .rep-score.safe{color:var(--low)}.rep-score.suspicious{color:var(--med)}.rep-score.malicious{color:var(--crit)}
 /* ══ SOUND BTN ══ */
 .sound-btn{font-size:.75rem}
+/* ══ QUICK-ACTION BUTTONS ══ */
+.qa-btn{background:var(--hover);border:1px solid var(--border);border-radius:4px;padding:2px 6px;margin-right:3px;cursor:pointer;font-size:.7rem;color:var(--t2)}
+.qa-btn:hover{background:var(--ag);color:var(--accent);border-color:var(--accent)}
+/* ══ AI CHAT ══ */
+#ai-chat-fab{position:fixed;bottom:22px;right:22px;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#2979ff);color:#fff;font-size:1.4rem;border:none;cursor:pointer;box-shadow:0 6px 20px rgba(124,58,237,.5);z-index:998;display:flex;align-items:center;justify-content:center}
+#ai-chat-panel{position:fixed;bottom:90px;right:22px;width:380px;max-width:92vw;height:520px;max-height:80vh;background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 12px 36px rgba(0,0,0,.5);display:none;flex-direction:column;z-index:999;overflow:hidden}
+#ai-chat-panel.open{display:flex}
+.chat-head{padding:.7rem .9rem;background:linear-gradient(135deg,rgba(124,58,237,.18),rgba(41,121,255,.18));border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.5rem;font-weight:700;font-size:.85rem}
+.chat-body{flex:1;overflow-y:auto;padding:.7rem .8rem;font-size:.8rem;color:var(--t2);line-height:1.5}
+.chat-msg-u{background:var(--ag);padding:.5rem .7rem;border-radius:8px;margin:.4rem 0;color:var(--t1)}
+.chat-msg-a{background:var(--hover);padding:.5rem .7rem;border-radius:8px;margin:.4rem 0;white-space:pre-wrap}
+.chat-input{display:flex;gap:.4rem;padding:.55rem;border-top:1px solid var(--border)}
+.chat-input input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:.45rem .6rem;color:var(--t1);font-size:.78rem}
 </style>
 </head>
 <body>
@@ -426,7 +439,7 @@ textarea.inp{resize:vertical}select.inp{cursor:pointer}
     <a href="/api/export/scored-alerts" class="btn btn-g" download>⬇ CSV</a>
     <a href="/api/export/scored-alerts?fmt=json" class="btn btn-g" download>⬇ JSON</a>
   </div>
-  <div class="card" style="padding:0;overflow:hidden"><table><thead><tr><th>Alert ID</th><th>Risk</th><th>Attack Type</th><th>Source IP</th><th>Action</th><th>Processed</th><th>FP</th></tr></thead><tbody id="alerts-body"><tr><td colspan="7" style="text-align:center;color:var(--t3);padding:2rem">Loading…</td></tr></tbody></table></div>
+  <div class="card" style="padding:0;overflow:hidden"><table><thead><tr><th>Alert ID</th><th>Risk</th><th>Attack Type</th><th>Source IP</th><th>Action</th><th>Processed</th><th style="min-width:170px">Quick Actions</th></tr></thead><tbody id="alerts-body"><tr><td colspan="7" style="text-align:center;color:var(--t3);padding:2rem">Loading…</td></tr></tbody></table></div>
 </div>
 
 <!-- ══════════════════════════ ATTACK ANALYSIS ══════════════════════════ -->
@@ -723,6 +736,28 @@ textarea.inp{resize:vertical}select.inp{cursor:pointer}
 
   </div><!-- /ca -->
 </div><!-- /main-container -->
+
+<!-- ══════════ AI INVESTIGATOR CHAT ══════════ -->
+<button id="ai-chat-fab" onclick="toggleChat()" title="AI Investigator">🤖</button>
+<div id="ai-chat-panel">
+  <div class="chat-head">🤖 AI Investigator <span style="margin-left:auto;cursor:pointer;font-size:1rem" onclick="toggleChat()">×</span></div>
+  <div class="chat-body" id="chat-body">
+    <div style="color:var(--t3);font-size:.75rem">Ask about your data: "What's the top attack today?", "Show recent critical incidents", "Which IPs are most active?"</div>
+  </div>
+  <div class="chat-input">
+    <input id="chat-input" placeholder="Ask the investigator…" onkeydown="if(event.key==='Enter')sendChat()">
+    <button class="btn btn-p" onclick="sendChat()">Send</button>
+  </div>
+</div>
+
+<!-- ══════════ PIVOT MODAL ══════════ -->
+<div id="pivotModal" class="modal">
+  <div class="mbox" style="width:780px;max-width:94vw"><span class="mcl" onclick="closeModal('pivotModal')">×</span>
+    <h2 id="pv-title" style="font-size:1rem;margin-bottom:.4rem">Pivot Search</h2>
+    <div id="pv-summary" style="font-size:.78rem;color:var(--t3);margin-bottom:.85rem">Loading…</div>
+    <div id="pv-content" style="max-height:60vh;overflow-y:auto;font-size:.78rem"></div>
+  </div>
+</div>
 
 <!-- ══════════ TOAST CONTAINER ══════════ -->
 <div id="toast-container"></div>
@@ -1307,6 +1342,120 @@ function downloadIncReport() {
   window.open(`/api/v1/incidents/${curInc}/report`, '_blank');
 }
 
+// ══ QUICK ACTIONS ══
+async function qaBlock(ip, alertId) {
+  if (!confirm(`Block IP ${ip}?`)) return;
+  const r = await fetch('/api/v1/alerts/block-ip', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ip, raw_alert_id: alertId, reason: 'Manual block from alerts table' })
+  }).catch(() => null);
+  if (!r) return toast('Block failed', 'error');
+  const d = await r.json();
+  toast(d.status === 'already_blocked' ? `${ip} already blocked` : `Blocked ${ip}`, 'success');
+}
+async function qaAddIOC(ip) {
+  const desc = prompt(`Add ${ip} as an IOC. Description (optional):`);
+  if (desc === null) return;
+  const r = await fetch('/api/v1/ioc/', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ioc_type: 'ip', value: ip, severity: 'High', source: 'Manual', description: desc || `Flagged from alert table`, tags: ['manual'] })
+  }).catch(() => null);
+  if (!r) return toast('IOC add failed', 'error');
+  toast(`Added ${ip} to IOC database`, 'success');
+}
+async function qaIncident(alertId, attackType) {
+  const sev = prompt('Severity (Critical/High/Medium/Low):', 'High');
+  if (!sev) return;
+  const r = await fetch('/api/v1/alerts/create-incident', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ raw_alert_id: alertId, severity: sev, title: '' })
+  }).catch(() => null);
+  if (!r || !r.ok) return toast('Incident creation failed', 'error');
+  const d = await r.json();
+  toast(`Incident created: ${d.incident_id.slice(0,8)}…`, 'success');
+  fetchIncidents && fetchIncidents();
+}
+
+// ══ PIVOT SEARCH ══
+async function openPivot(type, value) {
+  document.getElementById('pv-title').textContent = `Pivot: ${type.toUpperCase()} = ${value}`;
+  document.getElementById('pv-summary').textContent = 'Loading…';
+  document.getElementById('pv-content').innerHTML = '<div class="skel"></div><div class="skel" style="width:80%"></div>';
+  openModal('pivotModal');
+  const r = await fetch(`/api/v1/pivot/${type}/${encodeURIComponent(value)}`).catch(() => null);
+  if (!r) { document.getElementById('pv-content').innerHTML = '<div style="color:var(--crit)">Pivot lookup failed</div>'; return; }
+  const d = await r.json();
+  const s = d.summary;
+  document.getElementById('pv-summary').innerHTML =
+    `<b>${s.alert_count}</b> alerts · <b>${s.incident_count}</b> incidents · <b>${s.ioc_hits}</b> IOC hits · <b>${s.blocked}</b> blocks · max risk <b>${s.max_risk_score}</b>`;
+  const sec = (title, html) => `<div style="margin-bottom:1rem"><div style="font-size:.72rem;font-weight:700;text-transform:uppercase;color:var(--t3);letter-spacing:.05em;margin-bottom:.4rem">${title}</div>${html}</div>`;
+
+  let html = '';
+  if (d.ueba) {
+    html += sec('UEBA Profile', `<div style="background:var(--hover);padding:.6rem;border-radius:6px">Risk: <b>${d.ueba.risk_level}</b> · Alerts seen: ${d.ueba.total_alerts_seen} · Cumulative risk: ${d.ueba.cumulative_risk_score}</div>`);
+  }
+  if (d.iocs.length) {
+    html += sec('IOC Hits', d.iocs.map(i => `<div style="padding:.3rem 0;border-bottom:1px dashed var(--border)">[${i.severity}] ${i.type} — ${i.description||'—'} <span style="color:var(--t3)">(${i.source||'—'})</span></div>`).join(''));
+  }
+  if (d.blocked.length) {
+    html += sec('Block History', d.blocked.map(b => `<div style="padding:.3rem 0;border-bottom:1px dashed var(--border)">${b.reason} <span style="color:var(--t3)">— alert ${b.raw_alert_id.slice(0,12)}…</span></div>`).join(''));
+  }
+  if (s.attack_breakdown.length) {
+    html += sec('Attack Breakdown',
+      `<div style="display:flex;flex-wrap:wrap;gap:.4rem">` +
+      s.attack_breakdown.map(a => `<span class="badge b-h">${a.attack_type}: ${a.count}</span>`).join('') +
+      `</div>`);
+  }
+  if (d.incidents.length) {
+    html += sec('Linked Incidents', d.incidents.map(i =>
+      `<div style="padding:.35rem 0;border-bottom:1px dashed var(--border);display:flex;gap:.5rem;align-items:center">
+        <span class="badge ${i.severity==='Critical'?'b-c':i.severity==='High'?'b-h':'b-m'}">${i.severity}</span>
+        <span style="flex:1">${i.title}</span>
+        <span style="color:var(--t3);font-size:.7rem">${i.status}</span>
+      </div>`).join(''));
+  }
+  if (d.alerts.length) {
+    html += sec(`Related Alerts (${d.alerts.length})`,
+      `<table style="width:100%"><thead><tr><th>ID</th><th>Risk</th><th>Attack</th><th>Source IP</th><th>Action</th></tr></thead><tbody>` +
+      d.alerts.slice(0, 50).map(a => {
+        const cls = a.risk_score >= 80 ? 'b-c' : a.risk_score >= 60 ? 'b-h' : a.risk_score >= 30 ? 'b-m' : 'b-l';
+        return `<tr>
+          <td class="mono" style="font-size:.7rem">${(a.raw_alert_id||'').slice(0,10)}…</td>
+          <td><span class="badge ${cls}">${a.risk_score}</span></td>
+          <td style="font-size:.72rem">${a.attack_type}</td>
+          <td class="mono" style="font-size:.7rem">${a.source_ip||'—'}</td>
+          <td style="font-size:.7rem;color:var(--t3)">${(a.recommended_action||'').replace(/_/g,' ')}</td>
+        </tr>`;
+      }).join('') + `</tbody></table>`);
+  }
+  if (!html) html = '<div style="color:var(--t3);text-align:center;padding:2rem">No related artifacts found.</div>';
+  document.getElementById('pv-content').innerHTML = html;
+}
+
+// ══ AI CHAT ══
+function toggleChat() {
+  document.getElementById('ai-chat-panel').classList.toggle('open');
+}
+async function sendChat() {
+  const inp = document.getElementById('chat-input');
+  const q = inp.value.trim();
+  if (!q) return;
+  const body = document.getElementById('chat-body');
+  body.insertAdjacentHTML('beforeend', `<div class="chat-msg-u">${q}</div><div class="chat-msg-a" id="chat-pending">Thinking…</div>`);
+  body.scrollTop = body.scrollHeight;
+  inp.value = '';
+  const r = await fetch('/api/ai/chat', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question: q })
+  }).catch(() => null);
+  const pending = document.getElementById('chat-pending');
+  pending.id = '';
+  if (!r) { pending.textContent = 'Investigator unavailable.'; return; }
+  const d = await r.json();
+  pending.textContent = d.answer;
+  body.scrollTop = body.scrollHeight;
+}
+
 // ══ MITRE HEATMAP ══
 async function loadMitreHeatmap() {
   const grid = document.getElementById('mh-grid');
@@ -1377,14 +1526,24 @@ function renderAlerts(data) {
     const cls = a.risk_score >= 80 ? 'b-c' : a.risk_score >= 60 ? 'b-h' : a.risk_score >= 30 ? 'b-m' : 'b-l';
     const ip = a.source_ip || '—';
     const tpScore = Math.min(99, Math.round(a.risk_score * 0.9));
+    const ipCell = ip !== '—'
+      ? `<a href="javascript:void(0)" onclick="openPivot('ip','${ip}')" style="color:var(--accent);text-decoration:none">${ip}</a> <button onclick="copyIP('${ip}')" style="background:none;border:none;cursor:pointer;color:var(--t3);font-size:.65rem" title="Copy">📋</button>`
+      : '—';
+    const blockBtn = ip !== '—' ? `<button class="qa-btn" title="Block IP" onclick="qaBlock('${ip}','${a.raw_alert_id}')">🚫</button>` : '';
+    const iocBtn = ip !== '—' ? `<button class="qa-btn" title="Add to IOC" onclick="qaAddIOC('${ip}')">🎯</button>` : '';
     return `<tr>
-      <td class="mono" style="font-size:.72rem">${(a.raw_alert_id || '').slice(0, 10)}…</td>
+      <td class="mono" style="font-size:.72rem"><a href="javascript:void(0)" onclick="openPivot('alert','${a.raw_alert_id}')" style="color:var(--accent);text-decoration:none">${(a.raw_alert_id || '').slice(0, 10)}…</a></td>
       <td><span class="badge ${cls}">${a.risk_score}</span></td>
       <td style="font-size:.75rem">${a.attack_type || '—'}</td>
-      <td class="mono" style="font-size:.72rem">${ip} <button onclick="copyIP('${ip}')" style="background:none;border:none;cursor:pointer;color:var(--t3);font-size:.65rem" title="Copy">📋</button></td>
+      <td class="mono" style="font-size:.72rem">${ipCell}</td>
       <td style="font-size:.72rem">${(a.recommended_action || '').replace(/_/g, ' ')}</td>
       <td style="font-size:.72rem;color:var(--t3)">${String(a.processed_at || '').slice(0, 16)}</td>
-      <td><button class="btn btn-g" style="font-size:.65rem;padding:2px 6px" onclick="markFP('${a.raw_alert_id}')">FP</button></td>
+      <td style="white-space:nowrap">
+        ${blockBtn}
+        ${iocBtn}
+        <button class="qa-btn" title="Create Incident" onclick="qaIncident('${a.raw_alert_id}','${(a.attack_type||'').replace(/'/g,'')}')">🚨</button>
+        <button class="qa-btn" title="Mark False Positive" onclick="markFP('${a.raw_alert_id}')">FP</button>
+      </td>
     </tr>`;
   }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--t3);padding:2rem">No alerts.</td></tr>';
 }
