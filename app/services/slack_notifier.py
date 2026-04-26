@@ -93,7 +93,7 @@ def send_slack_alert(
                         "elements": [
                             {
                                 "type": "mrkdwn",
-                                "text": f"Shield.IO SOC · {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC",
+                                "text": f"Smart SIEM Risk Engine · {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC",
                             }
                         ],
                     },
@@ -140,7 +140,7 @@ def send_incident_notification(incident_id: str, title: str, severity: str) -> b
                     {"title": "Severity", "value": severity, "short": True},
                     {"title": "Incident ID", "value": incident_id[:12] + "…", "short": True},
                 ],
-                "footer": f"Shield.IO SOC · {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}",
+                "footer": f"Smart SIEM Risk Engine · {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}",
             }
         ],
     }
