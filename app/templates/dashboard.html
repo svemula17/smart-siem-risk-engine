@@ -238,6 +238,7 @@ textarea.inp{resize:vertical}select.inp{cursor:pointer}
     <div class="ni" data-tab="geomap"     onclick="sw('geomap',this)"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><span>Geo Map</span></div>
     <div class="ni" data-tab="netintel"   onclick="sw('netintel',this)"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="8" height="8" rx="1"/></svg><span>Network Intel</span></div>
     <div class="ni" data-tab="forecast"   onclick="sw('forecast',this)"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span>Threat Forecast</span></div>
+    <div class="ni" data-tab="graph"      onclick="sw('graph',this)"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="12" cy="18" r="3"/><line x1="8.5" y1="7.5" x2="15.5" y2="7.5"/><line x1="7.5" y1="8.5" x2="10.5" y2="15.5"/><line x1="16.5" y1="8.5" x2="13.5" y2="15.5"/></svg><span>Attack Graph</span><span class="nb" id="lm-badge" style="background:rgba(239,68,68,.15);color:#ef4444">0</span></div>
     <div class="ns" style="margin-top:.4rem">Platform</div>
     <div class="ni" data-tab="sources"    onclick="sw('sources',this)"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg><span>Log Sources</span></div>
     <div class="ni" data-tab="audit"      onclick="sw('audit',this)"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg><span>Audit Log</span></div>
@@ -682,6 +683,50 @@ textarea.inp{resize:vertical}select.inp{cursor:pointer}
       <div class="ch"><span class="ct">AI Forecast Narrative</span><span class="badge b-p">Claude AI</span></div>
       <div id="fc-narrative" style="font-size:.82rem;color:var(--t2);line-height:1.65">
         <div class="skel"></div><div class="skel" style="width:92%"></div><div class="skel" style="width:78%"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ ATTACK GRAPH ══════════════════════════ -->
+<div id="tab-graph" class="tab-content">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.85rem;gap:.6rem;flex-wrap:wrap">
+    <div>
+      <h2 style="font-size:1.05rem;font-weight:700">Attack Graph</h2>
+      <div style="font-size:.72rem;color:var(--t3)">Entity relationships extracted from alert pipeline · <span id="graph-stats">—</span></div>
+    </div>
+    <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+      <input id="graph-focus" placeholder="Focus entity (e.g. 192.168.1.10)" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.4rem .6rem;color:var(--t1);font-size:.78rem;width:220px">
+      <select id="graph-focus-type" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.4rem .5rem;color:var(--t1);font-size:.78rem">
+        <option value="ip">IP</option><option value="user">User</option><option value="host">Host</option><option value="domain">Domain</option><option value="hash">Hash</option>
+      </select>
+      <select id="graph-depth" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.4rem .5rem;color:var(--t1);font-size:.78rem">
+        <option value="1">depth 1</option><option value="2" selected>depth 2</option><option value="3">depth 3</option>
+      </select>
+      <button class="btn btn-p" onclick="graphLoadFocus()">🔍 Focus</button>
+      <button class="btn btn-g" onclick="graphLoadAll()">⬛ All</button>
+      <button class="btn btn-g" onclick="graphScan()">⚡ Scan Patterns</button>
+      <button class="btn btn-g" onclick="graphRefresh()">↻</button>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 320px;gap:.85rem">
+    <div class="card" style="padding:0;overflow:hidden;height:560px;position:relative">
+      <div id="graph-cy" style="width:100%;height:100%;background:var(--bg)"></div>
+      <div id="graph-legend" style="position:absolute;bottom:8px;left:8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.4rem .6rem;font-size:.66rem;color:var(--t2);line-height:1.5">
+        <div><span style="display:inline-block;width:9px;height:9px;background:#3b82f6;border-radius:50%;margin-right:4px"></span>IP &nbsp;<span style="display:inline-block;width:9px;height:9px;background:#a855f7;border-radius:50%;margin-right:4px"></span>User &nbsp;<span style="display:inline-block;width:9px;height:9px;background:#10b981;border-radius:50%;margin-right:4px"></span>Host</div>
+        <div><span style="display:inline-block;width:9px;height:9px;background:#f59e0b;border-radius:50%;margin-right:4px"></span>Process &nbsp;<span style="display:inline-block;width:9px;height:9px;background:#ef4444;border-radius:50%;margin-right:4px"></span>Domain &nbsp;<span style="display:inline-block;width:9px;height:9px;background:#6b7280;border-radius:50%;margin-right:4px"></span>Hash</div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:.6rem">
+      <div class="card">
+        <div class="ch"><span class="ct">Lateral Movement Chains</span><button class="btn btn-g" style="font-size:.65rem;padding:2px 6px" onclick="loadLateralChains()">↻</button></div>
+        <div id="lateral-chains" style="max-height:240px;overflow-y:auto;font-size:.72rem;color:var(--t2)">Loading…</div>
+      </div>
+      <div class="card">
+        <div class="ch"><span class="ct" id="node-detail-title">Node Detail</span></div>
+        <div id="node-detail" style="font-size:.72rem;color:var(--t2)">Click a node in the graph to inspect.</div>
       </div>
     </div>
   </div>
@@ -2041,6 +2086,199 @@ setInterval(() => {
 }, 30000);
 
 document.getElementById('ts').textContent = new Date().toLocaleString() + '  ·  Real-Time SOC v3';
+
+// ══════════════════════════ ATTACK GRAPH ══════════════════════════
+const GRAPH_COLORS = { ip:'#3b82f6', user:'#a855f7', host:'#10b981', process:'#f59e0b', domain:'#ef4444', hash:'#6b7280' };
+let _cy = null;
+
+function _buildCy(payload) {
+  if (typeof cytoscape === 'undefined') {
+    document.getElementById('graph-cy').innerHTML = '<div style="padding:1rem;color:var(--t3)">Cytoscape failed to load (offline?).</div>';
+    return;
+  }
+  const elements = [];
+  (payload.nodes || []).forEach(n => {
+    elements.push({ data: { id: n.id, label: n.value, type: n.type, tier: n.tier || '', risk: n.risk_score || 0, focus: !!n.focus } });
+  });
+  (payload.edges || []).forEach(e => {
+    elements.push({ data: { id: `${e.source}->${e.target}:${e.relation}`, source: e.source, target: e.target, relation: e.relation, count: e.count || 1 } });
+  });
+  if (_cy) { try { _cy.destroy(); } catch(_) {} }
+  _cy = cytoscape({
+    container: document.getElementById('graph-cy'),
+    elements,
+    style: [
+      { selector: 'node', style: {
+        'background-color': ele => GRAPH_COLORS[ele.data('type')] || '#94a3b8',
+        'label': 'data(label)',
+        'font-size': 9,
+        'color': '#e2e8f0',
+        'text-outline-width': 2,
+        'text-outline-color': '#0b1220',
+        'width': ele => 14 + Math.min(30, (ele.data('risk') || 0) / 4),
+        'height': ele => 14 + Math.min(30, (ele.data('risk') || 0) / 4),
+        'border-width': ele => ele.data('focus') ? 3 : 0,
+        'border-color': '#fbbf24',
+      }},
+      { selector: 'edge', style: {
+        'width': ele => Math.min(6, 1 + Math.log2((ele.data('count') || 1) + 1)),
+        'line-color': '#475569',
+        'target-arrow-color': '#475569',
+        'target-arrow-shape': 'triangle',
+        'curve-style': 'bezier',
+        'opacity': 0.7,
+        'label': 'data(relation)',
+        'font-size': 7,
+        'color': '#94a3b8',
+        'text-rotation': 'autorotate',
+        'text-background-opacity': 0,
+      }},
+      { selector: 'node:selected', style: { 'border-width': 3, 'border-color': '#22d3ee' } },
+    ],
+    layout: { name: 'cose', animate: false, idealEdgeLength: 90, nodeRepulsion: 8000 },
+  });
+  _cy.on('tap', 'node', evt => {
+    const d = evt.target.data();
+    loadNodeDetail(d.type, d.label);
+  });
+}
+
+async function graphRefresh() {
+  try {
+    const s = await fetch('/api/v1/graph/stats').then(r => r.json());
+    document.getElementById('graph-stats').textContent = `${s.nodes || 0} nodes · ${s.edges || 0} edges`;
+  } catch (e) {}
+  loadLateralChains();
+  graphLoadAll();
+}
+
+async function graphLoadAll() {
+  try {
+    const r = await fetch('/api/v1/graph/all?limit=200').then(r => r.json());
+    _buildCy(r);
+  } catch (e) { console.warn('graph all failed', e); }
+}
+
+async function graphLoadFocus() {
+  const value = document.getElementById('graph-focus').value.trim();
+  const type = document.getElementById('graph-focus-type').value;
+  const depth = document.getElementById('graph-depth').value;
+  if (!value) { graphLoadAll(); return; }
+  try {
+    const r = await fetch(`/api/v1/graph/neighborhood/${type}/${encodeURIComponent(value)}?depth=${depth}`).then(r => r.json());
+    if (!r.nodes || r.nodes.length === 0) {
+      document.getElementById('graph-cy').innerHTML = `<div style="padding:1rem;color:var(--t3)">No graph data for ${type}:${value} yet.</div>`;
+      return;
+    }
+    _buildCy(r);
+    loadNodeDetail(type, value);
+  } catch (e) { console.warn('focus load failed', e); }
+}
+
+async function graphScan() {
+  try {
+    const r = await fetch('/api/v1/graph/scan', { method:'POST' }).then(r => r.json());
+    if (typeof showToast === 'function') showToast(`Scanned ${r.scanned_nodes} nodes, ${r.incidents?.length || 0} new chains`, 'info');
+    loadLateralChains();
+  } catch (e) { console.warn('scan failed', e); }
+}
+
+async function loadLateralChains() {
+  try {
+    const rows = await fetch('/api/v1/graph/lateral-chains?limit=25').then(r => r.json());
+    const open = rows.filter(r => r.status === 'open');
+    const badge = document.getElementById('lm-badge');
+    if (badge) badge.textContent = open.length;
+    const html = rows.length === 0
+      ? '<div style="color:var(--t3);padding:.4rem">No lateral-movement chains detected yet.</div>'
+      : rows.map(r => `
+        <div style="padding:.45rem;border-bottom:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;gap:.4rem">
+            <span style="font-weight:600;color:var(--t1)">${r.pattern.replace(/_/g,' ')}</span>
+            <span class="badge" style="background:rgba(239,68,68,.15);color:#ef4444">${r.severity}</span>
+          </div>
+          <div style="font-size:.68rem;color:var(--t2);margin-top:.2rem">${r.description || ''}</div>
+          <div style="font-size:.62rem;color:var(--t3);margin-top:.15rem">${r.path.join(' → ')}</div>
+          <div style="margin-top:.25rem;display:flex;gap:.3rem">
+            <button class="btn btn-g" style="font-size:.62rem;padding:1px 5px" onclick="graphHighlightPath(${JSON.stringify(r.path).replace(/"/g,'&quot;')})">View</button>
+            ${r.status === 'open' ? `<button class="btn btn-g" style="font-size:.62rem;padding:1px 5px" onclick="closeChain(${r.id})">Close</button>` : ''}
+          </div>
+        </div>`).join('');
+    document.getElementById('lateral-chains').innerHTML = html;
+  } catch (e) {
+    document.getElementById('lateral-chains').innerHTML = '<div style="color:var(--t3);padding:.4rem">Failed to load chains.</div>';
+  }
+}
+
+async function closeChain(id) {
+  await fetch(`/api/v1/graph/lateral-chains/${id}/close`, { method:'POST' });
+  loadLateralChains();
+}
+
+function graphHighlightPath(path) {
+  if (!_cy || !path || path.length === 0) return;
+  _cy.elements().removeClass('hl');
+  path.forEach(k => { const n = _cy.getElementById(k); if (n) n.select(); });
+  const first = _cy.getElementById(path[0]);
+  if (first && first.length) _cy.center(first);
+}
+
+async function loadNodeDetail(type, value) {
+  document.getElementById('node-detail-title').textContent = `${type}: ${value}`;
+  try {
+    const d = await fetch(`/api/v1/graph/node/${type}/${encodeURIComponent(value)}`).then(r => r.json());
+    if (d.detail) { document.getElementById('node-detail').innerHTML = `<div style="color:var(--t3)">${d.detail}</div>`; return; }
+    const edges = (d.edges || []).slice(0, 20).map(e => `
+      <div style="padding:.25rem 0;border-bottom:1px dashed var(--border);font-size:.68rem">
+        <span style="color:var(--t3)">${e.direction === 'out' ? '→' : '←'}</span>
+        <span style="color:var(--t1)">${e.other.type}:${e.other.value}</span>
+        <span style="color:var(--t3)"> · ${e.relation} · ×${e.count}</span>
+      </div>`).join('');
+    document.getElementById('node-detail').innerHTML = `
+      <div style="margin-bottom:.4rem">
+        <div><b>Type:</b> ${d.node.type} · <b>Tier:</b> ${d.node.tier || '—'}</div>
+        <div><b>Risk:</b> ${d.node.risk_score} · <b>Last seen:</b> ${(d.node.last_seen || '').slice(0,19)}</div>
+        <div style="margin-top:.3rem;display:flex;gap:.3rem">
+          <button class="btn btn-p" style="font-size:.62rem;padding:1px 5px" onclick="investigateNode('${type}','${value.replace(/'/g,"\\'")}')">🤖 Investigate</button>
+          <button class="btn btn-g" style="font-size:.62rem;padding:1px 5px" onclick="document.getElementById('graph-focus').value='${value.replace(/'/g,"\\'")}';document.getElementById('graph-focus-type').value='${type}';graphLoadFocus()">⌖ Focus</button>
+        </div>
+      </div>
+      <div style="font-weight:600;color:var(--t2);margin-top:.4rem;margin-bottom:.2rem">Edges (${(d.edges || []).length})</div>
+      ${edges || '<div style="color:var(--t3)">No edges</div>'}
+    `;
+  } catch (e) {
+    document.getElementById('node-detail').innerHTML = '<div style="color:var(--t3)">Failed to load node.</div>';
+  }
+}
+
+async function investigateNode(type, value) {
+  try {
+    const r = await fetch('/api/v1/graph/investigate', {
+      method:'POST', headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ node_type:type, value, depth:2 }),
+    }).then(r => r.json());
+    _buildCy(r.subgraph);
+    const patterns = (r.patterns || []).map(p => `<div style="color:#ef4444">⚠ ${p.pattern}: ${p.description}</div>`).join('');
+    document.getElementById('node-detail').innerHTML = `
+      <div style="margin-bottom:.4rem;font-size:.72rem;color:var(--t1)">${r.narrative}</div>
+      ${patterns}
+    `;
+  } catch (e) { console.warn('investigate failed', e); }
+}
+
+// Lazy-load when tab opens
+(function () {
+  const orig = window.sw;
+  if (typeof orig !== 'function') return;
+  window.sw = function (tab, el) {
+    orig(tab, el);
+    if (tab === 'graph') graphRefresh();
+  };
+})();
+
+// Prime the badge on load
+setTimeout(loadLateralChains, 1500);
+setInterval(loadLateralChains, 30000);
 </script>
 </body>
 </html>

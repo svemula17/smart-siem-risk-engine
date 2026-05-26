@@ -241,6 +241,50 @@ class PlaybookExecutionDB(Base):
     executed_at = Column(String, nullable=False)
 
 
+class GraphNodeDB(Base):
+    """Entity node in the attack graph (IP, user, host, process, domain, hash)."""
+    __tablename__ = "graph_nodes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    node_type = Column(String, nullable=False, index=True)  # ip|user|host|process|domain|hash
+    value = Column(String, nullable=False, index=True)
+    tier = Column(String, nullable=True)                    # internal|dmz|external|privileged|user
+    risk_score = Column(Integer, default=0, nullable=False)
+    first_seen = Column(String, nullable=False)
+    last_seen = Column(String, nullable=False)
+    attrs_json = Column(Text, nullable=True)
+
+
+class GraphEdgeDB(Base):
+    """Directed relationship between two graph nodes, derived from alerts."""
+    __tablename__ = "graph_edges"
+
+    id = Column(Integer, primary_key=True, index=True)
+    src_node_id = Column(Integer, ForeignKey("graph_nodes.id"), nullable=False, index=True)
+    dst_node_id = Column(Integer, ForeignKey("graph_nodes.id"), nullable=False, index=True)
+    relation = Column(String, nullable=False, index=True)   # authenticated_to|connected_to|executed|accessed|resolved_to|child_of
+    raw_alert_id = Column(String, nullable=True, index=True)
+    weight = Column(Float, default=1.0, nullable=False)
+    count = Column(Integer, default=1, nullable=False)
+    first_seen = Column(String, nullable=False)
+    last_seen = Column(String, nullable=False, index=True)
+
+
+class LateralMovementIncidentDB(Base):
+    """Detected lateral-movement chain across the attack graph."""
+    __tablename__ = "lateral_movement_incidents"
+
+    id = Column(Integer, primary_key=True, index=True)
+    pattern = Column(String, nullable=False)                # fan_out_auth|privilege_chain|beacon|tier_cross|multi_hop_auth
+    severity = Column(String, nullable=False, default="High")
+    path_json = Column(Text, nullable=False)                # JSON list of node values forming the path
+    node_count = Column(Integer, nullable=False, default=0)
+    alert_ids_json = Column(Text, nullable=False, default="[]")
+    description = Column(Text, nullable=True)
+    status = Column(String, nullable=False, default="open")
+    created_at = Column(String, nullable=False)
+
+
 class MLModelMetaDB(Base):
     """Persists ML model training metadata across restarts."""
     __tablename__ = "ml_model_meta"

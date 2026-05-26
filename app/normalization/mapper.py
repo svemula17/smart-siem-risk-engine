@@ -8,6 +8,7 @@ from app.normalization.extractors import (
     extract_signature,
     extract_signature_id,
     extract_source_ip,
+    extract_target_ip,
     extract_threat_indicator_type,
 )
 
@@ -15,6 +16,7 @@ from app.normalization.extractors import (
 def normalize_alert(raw_alert: RawAlert) -> NormalizedAlert:
 
     source_ip = extract_source_ip(raw_alert)
+    target_ip = extract_target_ip(raw_alert)
     host = extract_host(raw_alert)
 
     category = extract_category(raw_alert)
@@ -31,7 +33,7 @@ def normalize_alert(raw_alert: RawAlert) -> NormalizedAlert:
         event_type="network_signature_alert",
         title=raw_alert.message,
         source_ip=source_ip,
-        target_ip=None,
+        target_ip=target_ip,
         username=None,
         host=host,
         start_time=raw_alert.start_time,

@@ -44,7 +44,7 @@ def dashboard(request: Request, replay: int = 1):
             from app import main as _app_main
             from app.models.db_models import (
                 IncidentDB, IncidentTimelineDB, IPEntityProfileDB,
-                AlertGroupDB, SuppressedAlertDB,
+                AlertGroupDB,
             )
             _app_main.stop_pipeline()
             _db = SessionLocal()

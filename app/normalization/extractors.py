@@ -12,6 +12,16 @@ def extract_source_ip(raw_alert: RawAlert) -> Optional[str]:
     return None
 
 
+def extract_target_ip(raw_alert: RawAlert) -> Optional[str]:
+    """Return second IP in `ips` list (when distinct from source)."""
+    ips = raw_alert.entity_ids.ips or []
+    src = extract_source_ip(raw_alert)
+    for ip in ips:
+        if ip and ip != src:
+            return ip
+    return None
+
+
 def extract_host(raw_alert: RawAlert) -> Optional[str]:
     if raw_alert.entity_ids.host:
         return raw_alert.entity_ids.host[0]

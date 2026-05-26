@@ -71,6 +71,22 @@ def main() -> None:
             from app.services.ueba_engine import ueba_engine
             ueba_engine.update_profile(db, scored, normalized)
 
+            # --- Attack graph: extract entities + edges, run pattern detectors ---
+            try:
+                from app.graph.extractor import extract_from_alert
+                from app.graph.path_detector import detect_patterns
+                extract_from_alert(db, normalized, scored)
+                focus_keys = []
+                if normalized.source_ip:
+                    focus_keys.append(f"ip:{normalized.source_ip}")
+                if getattr(normalized, "username", None):
+                    focus_keys.append(f"user:{normalized.username}")
+                if focus_keys:
+                    detect_patterns(db, focus_keys)
+            except Exception as e:
+                print(f"[graph] pipeline hook error: {e}")
+            # ---------------------------------------------------------------------
+
             evaluation_results.append(evaluation)
 
             incident_report_path = generate_incident_report(

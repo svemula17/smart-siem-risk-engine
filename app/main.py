@@ -29,6 +29,7 @@ from app.api.routes_playbooks import router as playbooks_router
 from app.api.routes_network import router as network_router
 from app.api.routes_mitre import router as mitre_router
 from app.api.routes_pivot import router as pivot_router
+from app.api.routes_graph import router as graph_router
 
 from app.database import Base, engine
 
@@ -89,6 +90,7 @@ app.include_router(playbooks_router,   tags=["Playbooks"])
 app.include_router(network_router,     tags=["Network"])
 app.include_router(mitre_router,       tags=["MITRE"])
 app.include_router(pivot_router,       tags=["Pivot"])
+app.include_router(graph_router,       tags=["Graph"])
 
 
 # ── Background alert pipeline control ──
@@ -140,6 +142,15 @@ def launch_pipeline() -> bool:
 
 @app.on_event("startup")
 def _on_startup():
+    # Warm in-memory attack graph + seed graph-aware correlation rules (best-effort)
+    try:
+        from app.graph.loader import graph_loader
+        from app.graph.rules_seed import seed as seed_graph_rules
+        seed_graph_rules()
+        if graph_loader.available:
+            graph_loader.warm()
+    except Exception as e:
+        print(f"[graph] startup init failed: {e}")
     if os.getenv("AUTO_PIPELINE", "1") != "0":
         launch_pipeline()
 
