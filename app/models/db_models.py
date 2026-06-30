@@ -297,3 +297,34 @@ class MLModelMetaDB(Base):
     fp_count_used = Column(Integer, default=0)
     last_trained_at = Column(String, nullable=True)
     accuracy_estimate = Column(Float, nullable=True)
+
+
+class APIKeyDB(Base):
+    """API keys for programmatic access."""
+    __tablename__ = "api_keys"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    key = Column(String, unique=True, nullable=False, index=True)
+    secret_hash = Column(String, nullable=False)
+    name = Column(String, nullable=False)
+    is_active = Column(Boolean, default=True)
+    last_used_at = Column(String, nullable=True)
+    created_at = Column(String, nullable=False)
+    expires_at = Column(String, nullable=True)
+
+
+class GeoIPCacheDB(Base):
+    """Cache of IP-to-geolocation lookups."""
+    __tablename__ = "geoip_cache"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ip_address = Column(String, unique=True, nullable=False, index=True)
+    country = Column(String, nullable=True)
+    city = Column(String, nullable=True)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    isp = Column(String, nullable=True)
+    risk_score = Column(Float, default=0.0)
+    cached_at = Column(String, nullable=False)
+    expires_at = Column(String, nullable=True)

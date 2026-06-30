@@ -8,7 +8,9 @@ from sqlalchemy import text
 
 from app.api.routes_alerts import router as alerts_router
 from app.api.routes_ai import router as ai_router
+from app.api.routes_api_keys import router as api_keys_router
 from app.api.routes_audit import router as audit_router
+from app.api.routes_backup import router as backup_router
 from app.api.routes_compliance import router as compliance_router
 from app.api.routes_dashboard import router as dashboard_router
 from app.api.routes_export import router as export_router
@@ -40,18 +42,17 @@ def init_db() -> None:
     # Create all new tables (idempotent)
     Base.metadata.create_all(bind=engine)
 
-    # Safe column migrations for existing tables
-    migrations = [
-        "ALTER TABLE normalized_alerts ADD COLUMN attack_type VARCHAR DEFAULT 'Unknown Threat'",
-        "ALTER TABLE scored_alerts ADD COLUMN is_anomaly BOOLEAN DEFAULT 0",
-    ]
-    with engine.connect() as conn:
-        for sql in migrations:
-            try:
-                conn.execute(text(sql))
-                conn.commit()
-            except Exception:
-                pass  # Column/table already exists
+    # Run migrations
+    from app.migrations import Migration
+    from app.database import SessionLocal
+    db = SessionLocal()
+    try:
+        migrator = Migration(db)
+        migrator.apply_all_pending()
+    except Exception as e:
+        print(f"[migrations] error: {e}")
+    finally:
+        db.close()
 
 
 init_db()
@@ -65,6 +66,8 @@ def root():
 # Core
 app.include_router(health_router,      tags=["Health"])
 app.include_router(auth_router,        tags=["Authentication"])
+app.include_router(api_keys_router,    tags=["API Keys"])
+app.include_router(backup_router,      tags=["Backup"])
 app.include_router(alerts_router,      tags=["Alerts"])
 app.include_router(metrics_router,     tags=["Metrics"])
 app.include_router(reports_router,     tags=["Reports"])
