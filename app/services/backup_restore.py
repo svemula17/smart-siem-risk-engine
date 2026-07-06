@@ -1,11 +1,9 @@
 """Database backup and restore utilities."""
+import gzip
 import logging
 import shutil
-import gzip
-import json
-from pathlib import Path
 from datetime import datetime
-from typing import Optional
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +15,7 @@ class BackupManager:
         self.backup_dir = Path(backup_dir)
         self.backup_dir.mkdir(parents=True, exist_ok=True)
 
-    def create_backup(self, db_path: str = "smart_siem.db") -> Optional[str]:
+    def create_backup(self, db_path: str = "smart_siem.db") -> str | None:
         """Create a compressed backup of the database.
 
         Returns:

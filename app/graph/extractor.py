@@ -1,11 +1,11 @@
 """Extract graph nodes + edges from a normalized + scored alert."""
 import json
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.graph.store import upsert_node, upsert_edge, classify_tier
+from app.graph.store import classify_tier, upsert_edge, upsert_node
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ _RELATION_BY_ATTACK = {
 }
 
 
-def _payload(normalized) -> Dict[str, Any]:
+def _payload(normalized) -> dict[str, Any]:
     raw = getattr(normalized, "normalized_payload_json", None)
     if raw:
         try:
@@ -45,7 +45,7 @@ def _attr(obj, key, default=None):
     return default
 
 
-def extract_from_alert(db: Session, normalized, scored) -> Dict[str, Any]:
+def extract_from_alert(db: Session, normalized, scored) -> dict[str, Any]:
     """Hook called from the alert pipeline. Builds graph entries silently.
 
     `normalized` is the NormalizedAlert pydantic model from the pipeline
@@ -65,7 +65,7 @@ def extract_from_alert(db: Session, normalized, scored) -> Dict[str, Any]:
     risk = int(_attr(scored, "risk_score", 0) or 0)
     risk_delta = max(1, risk // 20)
 
-    nodes: Dict[str, Any] = {}
+    nodes: dict[str, Any] = {}
     if src_ip:
         nodes["src_ip"] = upsert_node(db, "ip", src_ip, tier=classify_tier("ip", src_ip), risk_delta=risk_delta)
     if dst_ip:

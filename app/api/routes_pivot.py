@@ -1,14 +1,17 @@
 """Pivot search — given an entity (IP/user/host/alert), return all related artifacts."""
 import json
-from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import desc
 
 from app.database import SessionLocal
 from app.models.db_models import (
-    BlockedIPDB, IOCDB, IncidentDB, IPEntityProfileDB,
-    NormalizedAlertDB, RawAlertDB, ScoredAlertDB,
+    IOCDB,
+    BlockedIPDB,
+    IncidentDB,
+    IPEntityProfileDB,
+    NormalizedAlertDB,
+    ScoredAlertDB,
 )
 
 router = APIRouter()

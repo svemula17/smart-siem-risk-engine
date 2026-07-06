@@ -1,7 +1,7 @@
-import sqlite3
-import requests
 import os
-from typing import Dict, Optional
+import sqlite3
+
+import requests
 
 # Basic file-based cache to avoid ratelimiting the free public API
 CACHE_DB_PATH = "data/geoip_cache.db"
@@ -28,17 +28,17 @@ class GeoIPService:
         # Internal memory cache for ultra-fast repeated lookups in the same loop
         self._memory_cache = {}
 
-    def get_location(self, ip_address: str) -> Optional[Dict]:
+    def get_location(self, ip_address: str) -> dict | None:
         # 1. Check local memory
         if ip_address in self._memory_cache:
             return self._memory_cache[ip_address]
-            
+
         # 2. Check SQLite persistent cache
         conn = sqlite3.connect(CACHE_DB_PATH)
         cursor = conn.cursor()
         cursor.execute("SELECT lat, lon, country, city FROM geoip WHERE ip_address=?", (ip_address,))
         row = cursor.fetchone()
-        
+
         if row:
             conn.close()
             result = {"lat": row[0], "lon": row[1], "country": row[2], "city": row[3]}
@@ -46,13 +46,13 @@ class GeoIPService:
             return result
 
         # 3. If not cached, call public API (ip-api.com)
-        # Note: ip-api limits to 45 requests per minute for the free tier. 
+        # Note: ip-api limits to 45 requests per minute for the free tier.
         # Since we rely on a dataset with repeated IPs, our cache protects us quickly.
         try:
             # Don't resolve local/private IPs
             if ip_address.startswith("10.") or ip_address.startswith("192.168.") or ip_address.startswith("172."):
                 return None
-                
+
             response = requests.get(f"http://ip-api.com/json/{ip_address}?fields=status,lat,lon,country,city", timeout=2)
             if response.status_code == 200:
                 data = response.json()
@@ -63,20 +63,20 @@ class GeoIPService:
                         "country": data.get("country"),
                         "city": data.get("city")
                     }
-                    
+
                     # Store in DB
                     cursor.execute(
                         "INSERT INTO geoip (ip_address, lat, lon, country, city) VALUES (?, ?, ?, ?, ?)",
                         (ip_address, result["lat"], result["lon"], result["country"], result["city"])
                     )
                     conn.commit()
-                    
+
                     self._memory_cache[ip_address] = result
                     conn.close()
                     return result
         except requests.RequestException:
             pass # Network error or rate limiting
-            
+
         conn.close()
         return None
 

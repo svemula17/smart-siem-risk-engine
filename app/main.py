@@ -1,104 +1,69 @@
+import logging
 import os
 import subprocess
 import sys
+from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
-from sqlalchemy import text
+from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
-from app.api.routes_alerts import router as alerts_router
+from app.api.deps import get_current_user, require_role
 from app.api.routes_ai import router as ai_router
+from app.api.routes_alerts import router as alerts_router
 from app.api.routes_api_keys import router as api_keys_router
 from app.api.routes_audit import router as audit_router
+from app.api.routes_auth import router as auth_router
 from app.api.routes_backup import router as backup_router
 from app.api.routes_compliance import router as compliance_router
 from app.api.routes_dashboard import router as dashboard_router
 from app.api.routes_export import router as export_router
+from app.api.routes_forecast import router as forecast_router
+from app.api.routes_graph import router as graph_router
 from app.api.routes_health import router as health_router
 from app.api.routes_incidents import router as incidents_router
 from app.api.routes_ioc import router as ioc_router
 from app.api.routes_metrics import router as metrics_router
+from app.api.routes_mitre import router as mitre_router
+from app.api.routes_ml import router as ml_router
+from app.api.routes_network import router as network_router
+from app.api.routes_pivot import router as pivot_router
+from app.api.routes_playbooks import router as playbooks_router
 from app.api.routes_reports import router as reports_router
 from app.api.routes_reset import router as reset_router
 from app.api.routes_rules import router as rules_router
-from app.api.routes_auth import router as auth_router
 from app.api.routes_suppression import router as suppression_router
 from app.api.routes_ueba import router as ueba_router
 from app.api.routes_webhook import router as webhook_router
-from app.api.routes_ml import router as ml_router
-from app.api.routes_forecast import router as forecast_router
-from app.api.routes_playbooks import router as playbooks_router
-from app.api.routes_network import router as network_router
-from app.api.routes_mitre import router as mitre_router
-from app.api.routes_pivot import router as pivot_router
-from app.api.routes_graph import router as graph_router
+from app.config import settings
+from app.database import Base, SessionLocal, engine
 
-from app.database import Base, engine
-
-app = FastAPI(title="Smart SIEM Risk Engine API", version="3.0.0")
+logging.basicConfig(level=getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO))
 
 
 def init_db() -> None:
     # Create all new tables (idempotent)
     Base.metadata.create_all(bind=engine)
 
-    # Run migrations
+    # Run migrations, then ensure the initial admin user exists
     from app.migrations import Migration
-    from app.database import SessionLocal
+    from app.services.auth_service import auth_service
     db = SessionLocal()
     try:
         migrator = Migration(db)
         migrator.apply_all_pending()
+        auth_service.ensure_admin_user(db)
     except Exception as e:
         print(f"[migrations] error: {e}")
     finally:
         db.close()
 
 
-init_db()
-
-from fastapi.responses import RedirectResponse
-
-@app.get("/", include_in_schema=False)
-def root():
-    return RedirectResponse(url="/dashboard")
-
-# Core
-app.include_router(health_router,      tags=["Health"])
-app.include_router(auth_router,        tags=["Authentication"])
-app.include_router(api_keys_router,    tags=["API Keys"])
-app.include_router(backup_router,      tags=["Backup"])
-app.include_router(alerts_router,      tags=["Alerts"])
-app.include_router(metrics_router,     tags=["Metrics"])
-app.include_router(reports_router,     tags=["Reports"])
-app.include_router(dashboard_router,   tags=["Dashboard"])
-app.include_router(reset_router,       tags=["Reset"])
-app.include_router(incidents_router,   tags=["Incidents"])
-app.include_router(rules_router,       tags=["Rules"])
-app.include_router(ueba_router,        tags=["UEBA"])
-
-# Intelligence & Analytics
-app.include_router(ai_router,          tags=["AI"])
-app.include_router(audit_router,       tags=["Audit"])
-app.include_router(compliance_router,  tags=["Compliance"])
-app.include_router(export_router,      tags=["Export"])
-app.include_router(ioc_router,         tags=["IOC"])
-app.include_router(suppression_router, tags=["Suppression"])
-app.include_router(webhook_router,     tags=["Webhook"])
-
-# New v3 features
-app.include_router(ml_router,          tags=["ML"])
-app.include_router(forecast_router,    tags=["Forecast"])
-app.include_router(playbooks_router,   tags=["Playbooks"])
-app.include_router(network_router,     tags=["Network"])
-app.include_router(mitre_router,       tags=["MITRE"])
-app.include_router(pivot_router,       tags=["Pivot"])
-app.include_router(graph_router,       tags=["Graph"])
-
-
 # ── Background alert pipeline control ──
-# Auto-runs on server boot AND on every /dashboard refresh so alerts stream in
-# one-by-one via WebSocket. Set AUTO_PIPELINE=0 to disable auto-boot.
+# The demo pipeline streams sample alerts through the engine so the dashboard
+# populates live. Controlled by AUTO_PIPELINE / DEMO_MODE settings.
 _pipeline_proc: "subprocess.Popen | None" = None
 
 
@@ -134,7 +99,12 @@ def launch_pipeline() -> bool:
             cwd=str(project_root),
             stdout=log_f,
             stderr=subprocess.STDOUT,
-            env={**os.environ, "PYTHONUNBUFFERED": "1"},
+            env={
+                **os.environ,
+                "PYTHONUNBUFFERED": "1",
+                # Share the per-process token so the subprocess can broadcast
+                "INTERNAL_API_TOKEN": settings.INTERNAL_API_TOKEN,
+            },
         )
         print(f"[pipeline] launched (pid={_pipeline_proc.pid}) — logs: {log_path}")
         return True
@@ -143,8 +113,10 @@ def launch_pipeline() -> bool:
         return False
 
 
-@app.on_event("startup")
-def _on_startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+
     # Warm in-memory attack graph + seed graph-aware correlation rules (best-effort)
     try:
         from app.graph.loader import graph_loader
@@ -154,10 +126,78 @@ def _on_startup():
             graph_loader.warm()
     except Exception as e:
         print(f"[graph] startup init failed: {e}")
-    if os.getenv("AUTO_PIPELINE", "1") != "0":
+
+    if settings.AUTO_PIPELINE and settings.DEMO_MODE:
         launch_pipeline()
 
+    yield
 
-@app.on_event("shutdown")
-def _on_shutdown():
     stop_pipeline()
+
+
+app = FastAPI(title="Smart SIEM Risk Engine API", version="3.1.0", lifespan=lifespan)
+
+# ── Middleware ──
+if settings.cors_origin_list:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origin_list,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+
+@app.middleware("http")
+async def security_headers(request, call_next):
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "same-origin")
+    return response
+
+
+app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "static")), name="static")
+
+
+@app.get("/", include_in_schema=False)
+def root():
+    return RedirectResponse(url="/dashboard")
+
+
+AUTH = [Depends(get_current_user)]
+ADMIN = [Depends(require_role("Admin"))]
+
+# Open: health checks, login/logout, signed webhooks.
+app.include_router(health_router,      tags=["Health"])
+app.include_router(auth_router,        tags=["Authentication"])
+app.include_router(webhook_router,     tags=["Webhook"])
+
+# Mixed auth handled inside the router (HTML redirect, WebSocket, internal broadcast).
+app.include_router(dashboard_router,   tags=["Dashboard"])
+
+# Admin-only: destructive or key-issuing surfaces.
+app.include_router(api_keys_router,    tags=["API Keys"], dependencies=ADMIN)
+app.include_router(backup_router,      tags=["Backup"], dependencies=ADMIN)
+app.include_router(reset_router,       tags=["Reset"], dependencies=ADMIN)
+
+# Authenticated (session cookie or X-API-Key).
+app.include_router(alerts_router,      tags=["Alerts"], dependencies=AUTH)
+app.include_router(metrics_router,     tags=["Metrics"], dependencies=AUTH)
+app.include_router(reports_router,     tags=["Reports"], dependencies=AUTH)
+app.include_router(incidents_router,   tags=["Incidents"], dependencies=AUTH)
+app.include_router(rules_router,       tags=["Rules"], dependencies=AUTH)
+app.include_router(ueba_router,        tags=["UEBA"], dependencies=AUTH)
+app.include_router(ai_router,          tags=["AI"], dependencies=AUTH)
+app.include_router(audit_router,       tags=["Audit"], dependencies=AUTH)
+app.include_router(compliance_router,  tags=["Compliance"], dependencies=AUTH)
+app.include_router(export_router,      tags=["Export"], dependencies=AUTH)
+app.include_router(ioc_router,         tags=["IOC"], dependencies=AUTH)
+app.include_router(suppression_router, tags=["Suppression"], dependencies=AUTH)
+app.include_router(ml_router,          tags=["ML"], dependencies=AUTH)
+app.include_router(forecast_router,    tags=["Forecast"], dependencies=AUTH)
+app.include_router(playbooks_router,   tags=["Playbooks"], dependencies=AUTH)
+app.include_router(network_router,     tags=["Network"], dependencies=AUTH)
+app.include_router(mitre_router,       tags=["MITRE"], dependencies=AUTH)
+app.include_router(pivot_router,       tags=["Pivot"], dependencies=AUTH)
+app.include_router(graph_router,       tags=["Graph"], dependencies=AUTH)

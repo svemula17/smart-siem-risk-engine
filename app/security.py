@@ -3,7 +3,7 @@ import secrets
 import time
 from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Optional, Tuple
+
 
 class RateLimiter:
     """Simple in-memory rate limiter."""
@@ -58,7 +58,7 @@ class APIKeyManager:
     def __init__(self):
         self.keys = {}  # In production, store in DB
 
-    def generate_key(self, user_id: int, name: str) -> Tuple[str, str]:
+    def generate_key(self, user_id: int, name: str) -> tuple[str, str]:
         """Generate API key and secret. Secret shown only once."""
         key = f"sk_{secrets.token_urlsafe(16)}"
         secret = secrets.token_urlsafe(32)
@@ -66,7 +66,7 @@ class APIKeyManager:
         self.keys[key] = {"user_id": user_id, "name": name, "secret_hash": secret_hash, "created_at": datetime.utcnow()}
         return key, secret
 
-    def validate_key(self, key: str, secret: str) -> Optional[int]:
+    def validate_key(self, key: str, secret: str) -> int | None:
         """Validate API key and return user_id."""
         if key not in self.keys:
             return None

@@ -12,7 +12,6 @@ Both techniques write suppression records to SuppressedAlertDB for fatigue metri
 import hashlib
 from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Optional
 
 from sqlalchemy.orm import Session
 
@@ -25,7 +24,7 @@ DEDUP_WINDOW_MINUTES = 15
 _fingerprint_cache: dict[str, datetime] = {}
 
 
-def _make_fingerprint(source_ip: Optional[str], attack_type: Optional[str], event_type: str) -> str:
+def _make_fingerprint(source_ip: str | None, attack_type: str | None, event_type: str) -> str:
     raw = f"{source_ip or 'unknown'}|{attack_type or 'unknown'}|{event_type}"
     return hashlib.md5(raw.encode()).hexdigest()
 
@@ -148,7 +147,7 @@ def cluster_alerts_by_similarity(db: Session, limit: int = 2000) -> dict:
         "count": 0, "attack_types": defaultdict(int), "risk_scores": [], "ips": set()
     })
 
-    for label, item in zip(labels, meta):
+    for label, item in zip(labels, meta, strict=False):
         clusters[int(label)]["count"] += 1
         clusters[int(label)]["attack_types"][item["attack_type"]] += 1
         clusters[int(label)]["risk_scores"].append(item["risk_score"])

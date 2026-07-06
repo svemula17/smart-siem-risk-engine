@@ -1,5 +1,5 @@
-from app.models.raw_alert import RawAlert
 from app.models.normalized_alert import NormalizedAlert
+from app.models.raw_alert import RawAlert
 from app.normalization.extractors import (
     extract_attack_type,
     extract_category,

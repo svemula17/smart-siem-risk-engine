@@ -1,7 +1,7 @@
 """In-memory networkx mirror of the persisted graph for fast traversal."""
 import logging
 import threading
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 try:
     import networkx as nx
@@ -11,7 +11,7 @@ except ImportError:
     _HAS_NX = False
 
 from app.database import SessionLocal
-from app.models.db_models import GraphNodeDB, GraphEdgeDB
+from app.models.db_models import GraphEdgeDB, GraphNodeDB
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class GraphLoader:
         self._lock = threading.RLock()
         self._g = nx.MultiDiGraph() if _HAS_NX else None
         self._ready = False
-        self._node_by_id: Dict[int, Dict[str, Any]] = {}
+        self._node_by_id: dict[int, dict[str, Any]] = {}
 
     @property
     def available(self) -> bool:
@@ -82,7 +82,7 @@ class GraphLoader:
             finally:
                 db.close()
 
-    def apply_delta(self, nodes: Dict[str, Any], edges: List[Any], relation: str):
+    def apply_delta(self, nodes: dict[str, Any], edges: list[Any], relation: str):
         """Merge a small set of nodes/edges produced by the extractor into the live graph."""
         if not _HAS_NX or self._g is None:
             return
@@ -126,7 +126,7 @@ class GraphLoader:
     def _key(node_type: str, value: str) -> str:
         return f"{node_type}:{value}"
 
-    def neighborhood(self, node_type: str, value: str, depth: int = 1, cap: int = 200) -> Dict[str, Any]:
+    def neighborhood(self, node_type: str, value: str, depth: int = 1, cap: int = 200) -> dict[str, Any]:
         """Return subgraph within `depth` hops, capped at `cap` nodes."""
         if not _HAS_NX or self._g is None:
             return {"nodes": [], "edges": []}
@@ -167,7 +167,7 @@ class GraphLoader:
             except (nx.NetworkXNoPath, nx.NodeNotFound):
                 return []
 
-    def serialize_full(self, limit: int = 500) -> Dict[str, Any]:
+    def serialize_full(self, limit: int = 500) -> dict[str, Any]:
         if not _HAS_NX or self._g is None:
             return {"nodes": [], "edges": []}
         with self._lock:
@@ -183,7 +183,7 @@ class GraphLoader:
             sub = self._g.subgraph(keep)
             return self._serialize(sub)
 
-    def _serialize(self, g, focus: Optional[str] = None) -> Dict[str, Any]:
+    def _serialize(self, g, focus: str | None = None) -> dict[str, Any]:
         nodes = []
         for k, data in g.nodes(data=True):
             nodes.append({
@@ -207,7 +207,7 @@ class GraphLoader:
             })
         return {"nodes": nodes, "edges": edges}
 
-    def stats(self) -> Dict[str, Any]:
+    def stats(self) -> dict[str, Any]:
         if not _HAS_NX or self._g is None:
             return {"available": _HAS_NX, "ready": False, "nodes": 0, "edges": 0}
         with self._lock:

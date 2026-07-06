@@ -5,8 +5,9 @@ and normalizes them into the SIEM pipeline.
 """
 import json
 from datetime import datetime
-from fastapi import APIRouter, Request, HTTPException
-from fastapi.responses import JSONResponse
+
+from fastapi import APIRouter, HTTPException, Request
+
 from app.database import SessionLocal
 from app.models.db_models import AuditLogDB
 
@@ -22,7 +23,7 @@ async def receive_webhook(request: Request):
     try:
         body = await request.json()
     except Exception:
-        raise HTTPException(status_code=400, detail="Invalid JSON body")
+        raise HTTPException(status_code=400, detail="Invalid JSON body") from None
 
     event = {
         "received_at": datetime.utcnow().isoformat(),

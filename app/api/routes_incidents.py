@@ -1,13 +1,18 @@
 from datetime import datetime
+from html import escape
+
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from typing import List
-from html import escape
 
 from app.database import get_db
-from app.services.incident_service import get_recent_incidents, get_incident_details, update_incident_status, assign_incident
+from app.services.incident_service import (
+    assign_incident,
+    get_incident_details,
+    get_recent_incidents,
+    update_incident_status,
+)
 
 router = APIRouter(prefix="/api/v1/incidents")
 
@@ -68,7 +73,7 @@ def list_incidents(limit: int = 50, db: Session = Depends(get_db)):
 
 
 class BulkRequest(BaseModel):
-    incident_ids: List[str]
+    incident_ids: list[str]
     user: str = "Admin"
 
 

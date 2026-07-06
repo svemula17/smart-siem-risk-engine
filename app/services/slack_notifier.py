@@ -3,9 +3,8 @@ Slack / Generic Webhook Notifier
 Sends alert notifications to Slack channels or any webhook endpoint.
 Configure SLACK_WEBHOOK_URL in environment or app config.
 """
-import json
-import os
 import logging
+import os
 from datetime import datetime
 
 import httpx

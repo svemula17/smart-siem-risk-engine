@@ -3,17 +3,19 @@ ML Insights Routes — Model stats, retraining, auto-triage.
 """
 import json
 import logging
-import numpy as np
 from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import numpy as np
 from fastapi import APIRouter
 from sqlalchemy import func
 
 from app.database import SessionLocal
 from app.models.db_models import (
-    FalsePositiveDB, NormalizedAlertDB, ScoredAlertDB,
+    FalsePositiveDB,
+    NormalizedAlertDB,
+    ScoredAlertDB,
 )
 from app.services.audit_logger import log_action
 
@@ -139,8 +141,9 @@ def retrain_model():
     """Retrain Isolation Forest excluding confirmed false positives. Adjusts contamination."""
     db = SessionLocal()
     try:
-        from sklearn.ensemble import IsolationForest
         import joblib
+        from sklearn.ensemble import IsolationForest
+
         from app.services.ml_engine import ml_engine
 
         # 1. Get all false positive alert IDs

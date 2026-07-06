@@ -1,6 +1,6 @@
 import re
 
-with open('app/templates/dashboard.html', 'r') as f:
+with open('app/templates/dashboard.html') as f:
     html = f.read()
 
 # Add CSS for new layout just before </style>
@@ -113,7 +113,7 @@ soar_css = """
         }
         .top-nav-link:hover { color: var(--text-primary); }
         .top-nav-link.active { color: var(--text-primary); border-bottom: 2px solid var(--accent-primary); font-weight: 600; padding-bottom: 4px; }
-        
+
         .navbar { border-bottom: none; background: var(--bg-secondary); }
 """
 html = html.replace('</style>', soar_css + '\n    </style>')
@@ -159,10 +159,10 @@ new_wrapper_start = '''<div class="soar-container">
             Settings
         </div>
     </aside>
-    
+
     <aside class="secondary-sidebar">
         <div class="sub-menu-title" style="margin-bottom: 12px; color: var(--text-primary); font-size: 0.85rem;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform: rotate(90deg);"><polyline points="8 15 12 19 16 15"></polyline><line x1="12" y1="5" x2="12" y2="19"></line></svg> 
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform: rotate(90deg);"><polyline points="8 15 12 19 16 15"></polyline><line x1="12" y1="5" x2="12" y2="19"></line></svg>
             Attacks
         </div>
         <div class="sub-menu-item active">Automated Remediations</div>
@@ -170,14 +170,14 @@ new_wrapper_start = '''<div class="soar-container">
         <div class="sub-menu-item">System Misconfigurations</div>
         <div class="sub-menu-item">Zero-day Vulnerabilities</div>
         <div class="sub-menu-item">Manage Exceptions</div>
-        
+
         <div style="height: 2rem;"></div>
-        
+
         <div class="sub-menu-title">SIEM Core Stats</div>
         <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; padding: 0 12px; display: flex; justify-content: space-between;">Processed: <span style="font-family: monospace; font-weight:700">{{ raw_alert_count }}</span></div>
         <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; padding: 0 12px; display: flex; justify-content: space-between;">Scored Entities: <span style="font-family: monospace; font-weight:700">{{ scored_alert_count }}</span></div>
         <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; padding: 0 12px; display: flex; justify-content: space-between;">Auto-Blocks: <span style="font-family: monospace; font-weight:700; color: #ef4444;">{{ blocked_ip_count }}</span></div>
-        
+
         <div style="height: 2rem;"></div>
         <div class="sub-menu-title" style="color: var(--status-critical);">Red-Team Simulator</div>
         <div style="padding: 0 12px;">
@@ -186,7 +186,7 @@ new_wrapper_start = '''<div class="soar-container">
             <button class="btn-action" style="width: 100%; text-align: left;" onclick="fetch('/proxy-test', {headers:{'User-Agent':'nmap'}}).then(r => alert('Target Hit!\\nStatus: ' + r.status))">🔍 Simulate Scan</button>
         </div>
     </aside>
-    
+
     <div class="soar-main-content">
         <div style="display: flex; justify-content: space-between; align-items: flex-end;">
             <div>

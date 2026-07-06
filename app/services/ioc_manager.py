@@ -5,7 +5,6 @@ Also provides real-time matching against incoming alerts.
 """
 import json
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -66,7 +65,7 @@ def delete_ioc(db: Session, ioc_id: int) -> bool:
     return True
 
 
-def check_ip_against_ioc(db: Session, ip: str) -> Optional[dict]:
+def check_ip_against_ioc(db: Session, ip: str) -> dict | None:
     """Return matching IOC if IP is in the database, else None."""
     if not ip:
         return None

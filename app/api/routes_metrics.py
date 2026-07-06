@@ -4,8 +4,14 @@ from sqlalchemy.orm import Session
 
 from app.database import SessionLocal, get_db
 from app.models.db_models import (
-    EvaluationResultDB, ScoredAlertDB, IncidentDB, BlockedIPDB,
-    IPEntityProfileDB, PlaybookExecutionDB, FalsePositiveDB, RawAlertDB
+    BlockedIPDB,
+    EvaluationResultDB,
+    FalsePositiveDB,
+    IncidentDB,
+    IPEntityProfileDB,
+    PlaybookExecutionDB,
+    RawAlertDB,
+    ScoredAlertDB,
 )
 
 router = APIRouter()

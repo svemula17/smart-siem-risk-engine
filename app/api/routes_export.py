@@ -3,17 +3,20 @@ Export Routes — CSV, JSON download endpoints for all major tables.
 """
 import csv
 import io
-import json
 from datetime import datetime
 
 from fastapi import APIRouter
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy import desc
 
 from app.database import SessionLocal
 from app.models.db_models import (
-    AuditLogDB, BlockedIPDB, EvaluationResultDB,
-    IOCDB, NormalizedAlertDB, ScoredAlertDB,
+    IOCDB,
+    AuditLogDB,
+    BlockedIPDB,
+    EvaluationResultDB,
+    NormalizedAlertDB,
+    ScoredAlertDB,
 )
 
 router = APIRouter()

@@ -1,5 +1,4 @@
-from sqlalchemy import Boolean, Column, Float, Integer, String, Text, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String, Text
 
 from app.database import Base
 
@@ -78,6 +77,19 @@ class UserDB(Base):
     role = Column(String, nullable=False)  # Admin, Analyst, Viewer
 
 
+class SessionDB(Base):
+    """Server-side login sessions. Only the SHA-256 hash of the token is stored."""
+    __tablename__ = "sessions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    token_hash = Column(String, unique=True, index=True, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    username = Column(String, nullable=False)
+    role = Column(String, nullable=False)
+    created_at = Column(String, nullable=False)
+    expires_at = Column(String, nullable=False)
+
+
 class IncidentDB(Base):
     __tablename__ = "incidents"
 
@@ -89,7 +101,7 @@ class IncidentDB(Base):
     assignee_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(String, nullable=False)
     updated_at = Column(String, nullable=False)
-    
+
     # Simple JSON array of alert IDs for now, to avoid complex associations if not strictly needed
     # Or we can do a proper association table
     alerts_json = Column(Text, nullable=False, default="[]")

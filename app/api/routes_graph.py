@@ -1,6 +1,5 @@
 """Attack graph API — neighborhood, path, lateral-movement chains, investigate."""
 import json
-from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import desc
@@ -144,7 +143,7 @@ def path(src_type: str, src_value: str, dst_type: str, dst_value: str,
 
 
 @router.get("/api/v1/graph/lateral-chains")
-def lateral_chains(limit: int = 50, status: Optional[str] = None):
+def lateral_chains(limit: int = 50, status: str | None = None):
     db = SessionLocal()
     try:
         q = db.query(LateralMovementIncidentDB)

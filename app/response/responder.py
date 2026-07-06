@@ -1,14 +1,8 @@
-from sqlalchemy.orm import Session
-
-from app.models.normalized_alert import NormalizedAlert
-from app.models.scored_alert import ScoredAlert
-from app.response.blocklist_manager import add_blocked_ip
-from app.services.scoring_service import save_blocked_ip
-
-
 import json
 import logging
+
 from sqlalchemy.orm import Session
+
 from app.models.db_models import PlaybookDB
 from app.models.normalized_alert import NormalizedAlert
 from app.models.scored_alert import ScoredAlert
@@ -36,14 +30,14 @@ class PlaybookEngine:
         for playbook in self.active_playbooks:
             try:
                 condition = json.loads(playbook.trigger_condition_json)
-                
+
                 # Check conditions
                 match = True
                 if "min_risk_score" in condition and scored_alert.risk_score < condition["min_risk_score"]:
                     match = False
                 if "recommended_action" in condition and scored_alert.recommended_action != condition["recommended_action"]:
                     match = False
-                
+
                 if match:
                     actions = json.loads(playbook.actions_json)
                     for action in actions:

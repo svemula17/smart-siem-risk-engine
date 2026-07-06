@@ -2,14 +2,16 @@
 Network Intelligence Routes — Subnet behavior analysis, IP reputation scoring.
 """
 from collections import Counter, defaultdict
-from fastapi import APIRouter
 
 import httpx
+from fastapi import APIRouter
 
 from app.database import SessionLocal
 from app.models.db_models import (
-    BlockedIPDB, IOCDB, IPEntityProfileDB,
-    NormalizedAlertDB, ScoredAlertDB,
+    IOCDB,
+    BlockedIPDB,
+    IPEntityProfileDB,
+    NormalizedAlertDB,
 )
 
 router = APIRouter()
@@ -178,7 +180,8 @@ def _is_public_ip(ip: str) -> bool:
     if len(parts) != 4:
         return False
     try:
-        a = int(parts[0]); b = int(parts[1])
+        a = int(parts[0])
+        b = int(parts[1])
     except ValueError:
         return False
     if a == 10 or a == 127 or a == 0 or a >= 224:

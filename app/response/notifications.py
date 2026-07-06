@@ -1,8 +1,8 @@
-import json
 import logging
 import os
+from typing import Any
+
 import requests
-from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +11,7 @@ class NotificationService:
         # Allow overriding via environment variable
         self.webhook_url = webhook_url or os.environ.get("DISCORD_WEBHOOK_URL", "")
 
-    def send_discord_alert(self, scored_alert: Dict[str, Any], raw_message: str):
+    def send_discord_alert(self, scored_alert: dict[str, Any], raw_message: str):
         """
         Sends a high-priority alert to a Discord channel via Webhook.
         """
@@ -66,8 +66,8 @@ class NotificationService:
 
         try:
             response = requests.post(
-                self.webhook_url, 
-                json=payload, 
+                self.webhook_url,
+                json=payload,
                 headers={"Content-Type": "application/json"},
                 timeout=3
             )

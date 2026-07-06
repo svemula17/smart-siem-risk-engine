@@ -2,7 +2,7 @@
 import json
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -22,7 +22,7 @@ def _now():
     return datetime.utcnow()
 
 
-def _parse_ts(s: Optional[str]) -> Optional[datetime]:
+def _parse_ts(s: str | None) -> datetime | None:
     if not s:
         return None
     try:
@@ -31,8 +31,8 @@ def _parse_ts(s: Optional[str]) -> Optional[datetime]:
         return None
 
 
-def _save_incident(db: Session, pattern: str, severity: str, path: List[str],
-                   alert_ids: List[str], description: str) -> Optional[LateralMovementIncidentDB]:
+def _save_incident(db: Session, pattern: str, severity: str, path: list[str],
+                   alert_ids: list[str], description: str) -> LateralMovementIncidentDB | None:
     # dedupe: skip if identical open incident exists in last hour
     cutoff = (_now() - timedelta(hours=1)).isoformat()
     existing = (
@@ -70,7 +70,7 @@ def _save_incident(db: Session, pattern: str, severity: str, path: List[str],
         return None
 
 
-def detect_fan_out_auth(db: Session, focus_keys: List[str]) -> List[LateralMovementIncidentDB]:
+def detect_fan_out_auth(db: Session, focus_keys: list[str]) -> list[LateralMovementIncidentDB]:
     """User or IP that authenticated to >= N distinct hosts in a recent window."""
     g = graph_loader.graph
     if g is None:
@@ -107,7 +107,7 @@ def detect_fan_out_auth(db: Session, focus_keys: List[str]) -> List[LateralMovem
     return incidents
 
 
-def detect_privilege_chain(db: Session, focus_keys: List[str]) -> List[LateralMovementIncidentDB]:
+def detect_privilege_chain(db: Session, focus_keys: list[str]) -> list[LateralMovementIncidentDB]:
     """Path of length <= N from a non-privileged user to a privileged host/user."""
     import networkx as nx
     g = graph_loader.graph
@@ -146,7 +146,7 @@ def detect_privilege_chain(db: Session, focus_keys: List[str]) -> List[LateralMo
     return incidents
 
 
-def detect_beacon(db: Session, focus_keys: List[str]) -> List[LateralMovementIncidentDB]:
+def detect_beacon(db: Session, focus_keys: list[str]) -> list[LateralMovementIncidentDB]:
     """Repeated connected_to edges to the same external destination."""
     g = graph_loader.graph
     if g is None:
@@ -172,7 +172,7 @@ def detect_beacon(db: Session, focus_keys: List[str]) -> List[LateralMovementInc
     return incidents
 
 
-def detect_tier_cross(db: Session, focus_keys: List[str]) -> List[LateralMovementIncidentDB]:
+def detect_tier_cross(db: Session, focus_keys: list[str]) -> list[LateralMovementIncidentDB]:
     """An edge that crosses external → internal or user → privileged."""
     g = graph_loader.graph
     if g is None:
@@ -200,14 +200,15 @@ def detect_tier_cross(db: Session, focus_keys: List[str]) -> List[LateralMovemen
     return incidents
 
 
-def detect_patterns(db: Session, focus_node_keys: List[str]) -> List[Dict[str, Any]]:
+def detect_patterns(db: Session, focus_node_keys: list[str]) -> list[dict[str, Any]]:
     """Run all pattern detectors centred on the given recently-touched nodes."""
     if not graph_loader.available or graph_loader.graph is None:
         return []
     try:
         from app.graph.rules_seed import is_pattern_active
     except Exception:
-        is_pattern_active = lambda _db, _p: True
+        def is_pattern_active(_db, _p):
+            return True
     all_incidents = []
     pattern_map = {
         "fan_out_auth": detect_fan_out_auth,

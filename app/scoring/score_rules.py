@@ -1,9 +1,8 @@
-from typing import List, Tuple
 
 from app.models.normalized_alert import NormalizedAlert
 
 
-def score_by_category(alert: NormalizedAlert) -> Tuple[int, List[str]]:
+def score_by_category(alert: NormalizedAlert) -> tuple[int, list[str]]:
     category = alert.category.upper()
 
     if category == "BENIGN":
@@ -16,7 +15,7 @@ def score_by_category(alert: NormalizedAlert) -> Tuple[int, List[str]]:
     return 5, ["Category is UNKNOWN (+5)"]
 
 
-def score_by_raw_severity(alert: NormalizedAlert) -> Tuple[int, List[str]]:
+def score_by_raw_severity(alert: NormalizedAlert) -> tuple[int, list[str]]:
     severity = alert.raw_severity
 
     if severity == 0:
@@ -31,7 +30,7 @@ def score_by_raw_severity(alert: NormalizedAlert) -> Tuple[int, List[str]]:
     return 0, []
 
 
-def score_by_mitre_ids(alert: NormalizedAlert) -> Tuple[int, List[str]]:
+def score_by_mitre_ids(alert: NormalizedAlert) -> tuple[int, list[str]]:
     mitre_count = len(alert.mitre_ids)
 
     if mitre_count == 0:
@@ -41,7 +40,7 @@ def score_by_mitre_ids(alert: NormalizedAlert) -> Tuple[int, List[str]]:
     return score, [f"{mitre_count} MITRE ATT&CK ID(s) present (+{score})"]
 
 
-def score_by_threat_indicator(alert: NormalizedAlert) -> Tuple[int, List[str]]:
+def score_by_threat_indicator(alert: NormalizedAlert) -> tuple[int, list[str]]:
     indicator_type = (alert.threat_indicator_type or "UNKNOWN").upper()
 
     if indicator_type == "BENIGN":
@@ -56,7 +55,7 @@ def score_by_threat_indicator(alert: NormalizedAlert) -> Tuple[int, List[str]]:
     return 5, [f"Threat indicator type is {indicator_type} (+5)"]
 
 
-def score_by_group(alert: NormalizedAlert) -> Tuple[int, List[str]]:
+def score_by_group(alert: NormalizedAlert) -> tuple[int, list[str]]:
     group = alert.group.upper()
 
     if group == "NETWORK":

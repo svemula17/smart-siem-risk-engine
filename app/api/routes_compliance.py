@@ -3,15 +3,17 @@ Compliance Dashboard Routes
 Maps detected threats to SOC 2, PCI-DSS, and ISO 27001 controls.
 Also provides SLA metrics (MTTD / MTTR).
 """
-from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from fastapi import APIRouter
 from sqlalchemy import desc, func
 
 from app.database import SessionLocal
 from app.models.db_models import (
-    EvaluationResultDB, IncidentDB, NormalizedAlertDB, ScoredAlertDB,
+    EvaluationResultDB,
+    IncidentDB,
+    NormalizedAlertDB,
+    ScoredAlertDB,
 )
 
 router = APIRouter()
@@ -103,7 +105,7 @@ def sla_metrics():
     db = SessionLocal()
     try:
         # MTTD — approx using scored alert processing lag
-        scored = (
+        _scored = (
             db.query(ScoredAlertDB.processed_at)
             .order_by(desc(ScoredAlertDB.id))
             .limit(1000)

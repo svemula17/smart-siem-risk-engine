@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter
 
 from app.database import SessionLocal
-from app.models.db_models import NormalizedAlertDB, ScoredAlertDB
+from app.models.db_models import ScoredAlertDB
 
 router = APIRouter()
 
@@ -54,14 +54,14 @@ def get_risk_forecast():
         y_mean = sum(y) / n
         denom = sum((xi - x_mean) ** 2 for xi in x)
         slope = (
-            sum((xi - x_mean) * (yi - y_mean) for xi, yi in zip(x, y)) / denom
+            sum((xi - x_mean) * (yi - y_mean) for xi, yi in zip(x, y, strict=False)) / denom
             if denom > 0 else 0.0
         )
         intercept = y_mean - slope * x_mean
 
         # R² confidence
         y_pred = [intercept + slope * xi for xi in x]
-        ss_res = sum((yi - yp) ** 2 for yi, yp in zip(y, y_pred))
+        ss_res = sum((yi - yp) ** 2 for yi, yp in zip(y, y_pred, strict=False))
         ss_tot = sum((yi - y_mean) ** 2 for yi in y) or 1.0
         r2 = max(0.0, 1 - ss_res / ss_tot)
 

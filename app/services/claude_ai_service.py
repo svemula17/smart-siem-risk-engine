@@ -8,7 +8,6 @@ Falls back to a rule-based summary if the API is unavailable.
 """
 import logging
 import os
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 

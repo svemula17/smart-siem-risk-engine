@@ -5,12 +5,14 @@ import sqlite3
 from collections import defaultdict
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from sqlalchemy import desc, func
 
+from app.api.deps import get_current_user
+from app.config import settings
 from app.database import SessionLocal
 from app.models.db_models import (
     BlockedIPDB,
@@ -20,6 +22,7 @@ from app.models.db_models import (
     ScoredAlertDB,
     SuppressedAlertDB,
 )
+from app.services import session_service
 from app.websockets import manager
 
 router = APIRouter()
@@ -33,18 +36,25 @@ def api_docs(request: Request):
 
 @router.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request, replay: int = 1):
-    token = request.cookies.get("session_token")
-    if not token or not token.startswith("authenticated_"):
+    _sdb = SessionLocal()
+    try:
+        session = session_service.validate_token(_sdb, request.cookies.get("session_token"))
+    finally:
+        _sdb.close()
+    if not session:
         return RedirectResponse(url="/login")
 
-    # ── Replay-on-refresh: every dashboard GET triggers a fresh pipeline run
-    #    so alerts stream in one-by-one via WebSocket. Disable with ?replay=0.
-    if replay:
+    # ── Replay-on-refresh (DEMO_MODE only): every dashboard GET wipes alert
+    #    tables and re-runs the pipeline so alerts stream in one-by-one via
+    #    WebSocket. Disable per-request with ?replay=0.
+    if replay and settings.DEMO_MODE:
         try:
             from app import main as _app_main
             from app.models.db_models import (
-                IncidentDB, IncidentTimelineDB, IPEntityProfileDB,
                 AlertGroupDB,
+                IncidentDB,
+                IncidentTimelineDB,
+                IPEntityProfileDB,
             )
             _app_main.stop_pipeline()
             _db = SessionLocal()
@@ -196,18 +206,29 @@ class BroadcastData(BaseModel):
     is_anomaly: bool = False
 
 
-@router.post("/api/internal/broadcast")
-async def broadcast_alert(data: dict):
+@router.post("/api/internal/broadcast", include_in_schema=False)
+async def broadcast_alert(data: dict, request: Request):
+    # Only the pipeline subprocess (which shares our token via env) may broadcast.
+    if request.headers.get("X-Internal-Token") != settings.INTERNAL_API_TOKEN:
+        raise HTTPException(status_code=403, detail="Invalid internal token")
     await manager.broadcast(data)
     return {"status": "broadcasted"}
 
 
 @router.websocket("/ws/dashboard")
 async def websocket_dashboard(websocket: WebSocket):
+    _sdb = SessionLocal()
+    try:
+        session = session_service.validate_token(_sdb, websocket.cookies.get("session_token"))
+    finally:
+        _sdb.close()
+    if not session:
+        await websocket.close(code=4401)
+        return
     await manager.connect(websocket)
     try:
         while True:
-            data = await websocket.receive_text()
+            await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
@@ -220,7 +241,7 @@ class IPAction(BaseModel):
 
 
 @router.post("/api/unblock_ip")
-def unblock_ip(action: IPAction):
+def unblock_ip(action: IPAction, _user=Depends(get_current_user)):
     db = SessionLocal()
     try:
         blocked = db.query(BlockedIPDB).filter(BlockedIPDB.ip_address == action.ip_address).first()
@@ -234,7 +255,7 @@ def unblock_ip(action: IPAction):
 
 
 @router.post("/api/block_ip")
-def block_ip(action: IPAction):
+def block_ip(action: IPAction, _user=Depends(get_current_user)):
     db = SessionLocal()
     try:
         existing = db.query(BlockedIPDB).filter(BlockedIPDB.ip_address == action.ip_address).first()
@@ -253,7 +274,7 @@ class HuntQuery(BaseModel):
 
 
 @router.post("/api/hunt")
-def hunt_threats(hunt: HuntQuery):
+def hunt_threats(hunt: HuntQuery, _user=Depends(get_current_user)):
     from sqlalchemy import and_
 
     db = SessionLocal()
@@ -332,7 +353,7 @@ def hunt_threats(hunt: HuntQuery):
 # ── Attack Graph ──────────────────────────────────────────────────────────────
 
 @router.get("/api/v1/graph-data")
-def get_attack_graph_data():
+def get_attack_graph_data(_user=Depends(get_current_user)):
     db = SessionLocal()
     try:
         query = (
@@ -387,7 +408,7 @@ def get_attack_graph_data():
 # ── NEW: Attack Type Stats ────────────────────────────────────────────────────
 
 @router.get("/api/attack-type-stats")
-def get_attack_type_stats():
+def get_attack_type_stats(_user=Depends(get_current_user)):
     """Returns attack type distribution with risk breakdown."""
     db = SessionLocal()
     try:
@@ -417,7 +438,7 @@ def get_attack_type_stats():
 # ── NEW: Alert Fatigue Metrics ────────────────────────────────────────────────
 
 @router.get("/api/fatigue-metrics")
-def get_fatigue_metrics():
+def get_fatigue_metrics(_user=Depends(get_current_user)):
     """Returns alert fatigue / suppression metrics."""
     from app.services.alert_deduplicator import get_fatigue_metrics as _get_metrics
 
@@ -431,7 +452,7 @@ def get_fatigue_metrics():
 # ── NEW: 7-day Alert Trend ───────────────────────────────────────────────────
 
 @router.get("/api/alert-trends")
-def get_alert_trends():
+def get_alert_trends(_user=Depends(get_current_user)):
     """Returns 7-day alert counts grouped by day."""
     db = SessionLocal()
     try:
@@ -472,7 +493,7 @@ def get_alert_trends():
 # ── NEW: MITRE Heatmap ───────────────────────────────────────────────────────
 
 @router.get("/api/mitre-heatmap")
-def get_mitre_heatmap():
+def get_mitre_heatmap(_user=Depends(get_current_user)):
     """Returns MITRE TTP counts for heatmap visualization."""
     db = SessionLocal()
     try:
@@ -504,7 +525,7 @@ def get_mitre_heatmap():
 # ── NEW: ML Cluster Summary ──────────────────────────────────────────────────
 
 @router.get("/api/alert-clusters")
-def get_alert_clusters():
+def get_alert_clusters(_user=Depends(get_current_user)):
     """Returns DBSCAN cluster summary for alert grouping view."""
     from app.services.alert_deduplicator import cluster_alerts_by_similarity
 

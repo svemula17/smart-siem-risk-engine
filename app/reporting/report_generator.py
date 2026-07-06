@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import List
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -7,7 +6,6 @@ from app.models.evaluation_result import EvaluationResult
 from app.models.normalized_alert import NormalizedAlert
 from app.models.raw_alert import RawAlert
 from app.models.scored_alert import ScoredAlert
-
 
 TEMPLATES_DIR = Path("app/reporting/templates")
 REPORTS_DIR = Path("data/reports")
@@ -38,7 +36,7 @@ def generate_incident_report(
 
 
 def generate_evaluation_summary_report(
-    results: List[EvaluationResult],
+    results: list[EvaluationResult],
     summary: dict,
 ) -> str:
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)

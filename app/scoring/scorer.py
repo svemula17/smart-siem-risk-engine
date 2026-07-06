@@ -32,15 +32,15 @@ def score_alert(alert: NormalizedAlert) -> ScoredAlert:
     # ML NLP Model Blended Scoring
     try:
         from app.scoring.ml_model import ml_engine
-        
+
         # We need to ensure text isn't None
         text_to_analyze = alert.title if alert.title else ""
         if text_to_analyze:
             ml_prediction = ml_engine.predict(text_to_analyze)
-            
+
             if ml_prediction != "UNKNOWN":
                 reasons.append(f"ML NLP Model predicted '{ml_prediction}' risk band")
-                
+
                 # Blend the ML prediction with the heuristic score
                 if ml_prediction == "CRITICAL" and total_score < 75:
                     total_score += 15

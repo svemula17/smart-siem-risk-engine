@@ -1,3 +1,6 @@
+import requests
+
+from app.config import settings
 from app.database import SessionLocal
 from app.evaluation.confusion_matrix import calculate_evaluation_summary
 from app.evaluation.evaluator import evaluate_alert
@@ -10,7 +13,6 @@ from app.reporting.report_generator import (
     generate_incident_report,
 )
 from app.response.responder import respond_to_alert
-from app.scoring.score_helpers import get_risk_band
 from app.scoring.scorer import score_alert
 from app.services.alert_service import (
     save_normalized_alert,
@@ -18,7 +20,6 @@ from app.services.alert_service import (
     save_scored_alert,
 )
 from app.services.evaluation_service import save_evaluation_result
-import requests
 
 RAW_ALERTS_DIR = "data/raw_alerts"
 
@@ -36,15 +37,15 @@ def main() -> None:
     try:
         for alert in alerts:
             processed_count += 1
-            is_valid = validate_raw_alert(alert)
+            validate_raw_alert(alert)
             normalized = normalize_alert(alert)
             scored = score_alert(normalized)
-            
+
             # --- ML Auto-Triage Hook ---
             from app.services.ml_engine import ml_engine
             if not ml_engine.is_trained:
                 ml_engine.train_on_history(db)
-            
+
             is_anomaly = ml_engine.predict_anomaly(normalized, scored)
             if is_anomaly:
                 scored.risk_score = min(100, scored.risk_score + 30)
@@ -89,14 +90,14 @@ def main() -> None:
 
             evaluation_results.append(evaluation)
 
-            incident_report_path = generate_incident_report(
+            generate_incident_report(
                 raw_alert=alert,
                 normalized_alert=normalized,
                 scored_alert=scored,
                 evaluation=evaluation,
             )
 
-            risk_band = get_risk_band(scored.risk_score)
+
 
             from app.services.geoip_service import geoip_engine
             location = geoip_engine.get_location(normalized.source_ip) if normalized.source_ip else None
@@ -133,7 +134,12 @@ def main() -> None:
                     "city": city,
                     "is_anomaly": is_anomaly
                 }
-                requests.post("http://127.0.0.1:8000/api/internal/broadcast", json=payload, timeout=1)
+                requests.post(
+                    "http://127.0.0.1:8000/api/internal/broadcast",
+                    json=payload,
+                    headers={"X-Internal-Token": settings.INTERNAL_API_TOKEN},
+                    timeout=1,
+                )
             except requests.exceptions.RequestException:
                 pass # Dashboard might not be running, ignore
 

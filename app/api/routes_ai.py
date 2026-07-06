@@ -1,20 +1,24 @@
 """
 AI / Claude Routes — Incident summarization, attack explanations, false-positive feedback.
 """
-import json
 from datetime import datetime
-from fastapi import APIRouter, HTTPException
+
+from fastapi import APIRouter
 from pydantic import BaseModel
 from sqlalchemy import desc
 
 from app.database import SessionLocal
 from app.models.db_models import (
-    FalsePositiveDB, NormalizedAlertDB, ScoredAlertDB,
-)
-from app.services.claude_ai_service import (
-    explain_attack_type, generate_incident_summary, investigator_chat,
+    FalsePositiveDB,
+    NormalizedAlertDB,
+    ScoredAlertDB,
 )
 from app.services.audit_logger import log_action
+from app.services.claude_ai_service import (
+    explain_attack_type,
+    generate_incident_summary,
+    investigator_chat,
+)
 
 router = APIRouter()
 

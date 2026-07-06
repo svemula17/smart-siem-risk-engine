@@ -1,8 +1,8 @@
 """GeoIP enrichment service for alert and IP data."""
-import json
 import logging
 from datetime import datetime, timedelta
-from typing import Optional, Dict, Any
+from typing import Any
+
 from sqlalchemy.orm import Session
 
 from app.models.db_models import GeoIPCacheDB
@@ -16,7 +16,7 @@ class GeoIPEnrichment:
     def __init__(self):
         self.cache_ttl_days = 30
 
-    def get_location(self, db: Session, ip_address: str) -> Optional[Dict[str, Any]]:
+    def get_location(self, db: Session, ip_address: str) -> dict[str, Any] | None:
         """Get cached location for IP, or None if not found."""
         # Don't lookup internal IPs
         if is_internal_ip(ip_address):
@@ -46,11 +46,11 @@ class GeoIPEnrichment:
         self,
         db: Session,
         ip_address: str,
-        country: Optional[str] = None,
-        city: Optional[str] = None,
-        latitude: Optional[float] = None,
-        longitude: Optional[float] = None,
-        isp: Optional[str] = None,
+        country: str | None = None,
+        city: str | None = None,
+        latitude: float | None = None,
+        longitude: float | None = None,
+        isp: str | None = None,
         risk_score: float = 0.0,
     ) -> None:
         """Cache location data for an IP."""
@@ -84,7 +84,7 @@ class GeoIPEnrichment:
 
         db.commit()
 
-    def get_country_risk(self, country: Optional[str]) -> float:
+    def get_country_risk(self, country: str | None) -> float:
         """Return risk multiplier for a country (0.5 - 2.0)."""
         # Hardcoded risk scores for known high-risk regions
         high_risk_countries = {"KP", "IR", "SY", "CU"}  # OFAC sanctioned

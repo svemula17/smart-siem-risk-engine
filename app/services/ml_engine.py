@@ -1,10 +1,11 @@
-import logging
 import json
+import logging
+from pathlib import Path
+
+import joblib
 import numpy as np
 from sklearn.ensemble import IsolationForest
 from sqlalchemy.orm import Session
-from pathlib import Path
-import joblib
 
 from app.models.db_models import NormalizedAlertDB, ScoredAlertDB
 from app.models.normalized_alert import NormalizedAlert

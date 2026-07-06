@@ -1,4 +1,3 @@
-from typing import List, Optional
 
 from pydantic import BaseModel
 
@@ -9,17 +8,17 @@ class NormalizedAlert(BaseModel):
     group: str
     event_type: str
     title: str
-    source_ip: Optional[str] = None
-    target_ip: Optional[str] = None
-    username: Optional[str] = None
-    host: Optional[str] = None
+    source_ip: str | None = None
+    target_ip: str | None = None
+    username: str | None = None
+    host: str | None = None
     start_time: str
     end_time: str
     raw_severity: int
     category: str
-    signature: Optional[str] = None
-    signature_id: Optional[str] = None
-    mitre_ids: List[str] = []
-    threat_indicator_type: Optional[str] = None
+    signature: str | None = None
+    signature_id: str | None = None
+    mitre_ids: list[str] = []
+    threat_indicator_type: str | None = None
     attack_type: str = "Unknown Threat"
     ground_truth_label: str

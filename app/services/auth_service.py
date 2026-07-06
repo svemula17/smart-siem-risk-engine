@@ -1,8 +1,9 @@
+import hashlib
 import logging
 import secrets
-import hashlib
-from typing import Optional
+
 from sqlalchemy.orm import Session
+
 from app.models.db_models import UserDB
 
 logger = logging.getLogger(__name__)
@@ -26,24 +27,34 @@ class AuthService:
         except Exception:
             return False
 
-    def init_mock_users(self, db: Session):
-        """Creates default users for the simulation if they don't exist."""
+    def ensure_admin_user(self, db: Session):
+        """Create the initial admin user on first boot — no default credentials.
+
+        Uses ADMIN_PASSWORD from the environment when set; otherwise generates a
+        random password and prints it to the console exactly once.
+        """
         if self.mock_users_created:
             return
 
         if db.query(UserDB).count() == 0:
-            users = [
-                UserDB(username="admin", password_hash=self.hash_password("admin123!"), role="Admin"),
-                UserDB(username="analyst_1", password_hash=self.hash_password("analyst123!"), role="Analyst"),
-                UserDB(username="viewer_1", password_hash=self.hash_password("viewer123!"), role="Viewer")
-            ]
-            db.add_all(users)
+            from app.config import settings
+            password = settings.ADMIN_PASSWORD or secrets.token_urlsafe(12)
+            db.add(UserDB(username="admin", password_hash=self.hash_password(password), role="Admin"))
             db.commit()
-            logger.info("Mock users initialized with strong passwords.")
+            if settings.ADMIN_PASSWORD:
+                logger.info("Admin user created with password from ADMIN_PASSWORD.")
+            else:
+                print(
+                    "\n" + "=" * 62
+                    + "\n  FIRST BOOT — admin account created"
+                    + f"\n  username: admin\n  password: {password}"
+                    + "\n  (set ADMIN_PASSWORD in .env to choose your own)"
+                    + "\n" + "=" * 62 + "\n"
+                )
 
         self.mock_users_created = True
 
-    def get_user_by_username(self, db: Session, username: str) -> Optional[UserDB]:
+    def get_user_by_username(self, db: Session, username: str) -> UserDB | None:
         return db.query(UserDB).filter(UserDB.username == username).first()
 
     def get_all_users(self, db: Session):

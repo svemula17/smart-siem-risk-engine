@@ -1,0 +1,29 @@
+[project]
+name = "smart-siem-risk-engine"
+version = "3.1.0"
+description = "SIEM + SOAR platform: ingestion, normalization, ML risk scoring, automated response, UEBA, and a live analyst dashboard"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Sai Kumar Vemula" }]
+requires-python = ">=3.11"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+exclude = ["venv", ".venv", "data", "Data Set"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "B"]
+ignore = [
+  "E402", # module-import-not-at-top — app uses deliberate lazy imports in hot paths
+  "B008", # function-call-in-default-argument — FastAPI Depends()/Form() idiom
+  "E501", # line-too-long — long HTML/SQL strings; readability handled in review
+  "E712", # true-false-comparison — SQLAlchemy filters require == True/False
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --cov=app --cov-report=term-missing:skip-covered"
+
+[tool.coverage.run]
+omit = ["app/templates/*", "tests/*"]

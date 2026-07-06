@@ -3,7 +3,6 @@ Attack Type Classifier
 Maps MITRE ATT&CK techniques, alert categories, and message keywords
 to human-readable attack type labels for dashboard visualization.
 """
-from typing import List
 
 # MITRE ATT&CK technique → attack type
 MITRE_TO_ATTACK_TYPE: dict[str, str] = {
@@ -181,7 +180,7 @@ ATTACK_TYPE_COLORS: dict[str, str] = {
 }
 
 
-def classify_attack_type(mitre_ids: List[str], category: str, message: str = "") -> str:
+def classify_attack_type(mitre_ids: list[str], category: str, message: str = "") -> str:
     """
     Classify the attack type from most-specific to least-specific source:
     1. MITRE ATT&CK technique IDs

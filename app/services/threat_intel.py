@@ -2,7 +2,6 @@ import json
 import logging
 import sqlite3
 import time
-from typing import Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +27,7 @@ class ThreatIntelService:
         except Exception as e:
             logger.error(f"Failed to initialize Threat Intel Cache DB: {e}")
 
-    def get_intel_for_ip(self, ip_address: str) -> Optional[Dict]:
+    def get_intel_for_ip(self, ip_address: str) -> dict | None:
         """
         Retrieves threat intelligence for an IP address.
         Since we want to avoid requiring API keys from the user, this is a local mock
@@ -55,20 +54,20 @@ class ThreatIntelService:
         except Exception as e:
             logger.error(f"Error reading Threat Intel DB: {e}")
 
-        # Stub Integration Logic 
+        # Stub Integration Logic
         return self._fetch_mock_intel(ip_address)
 
-    def _fetch_mock_intel(self, ip_address: str) -> Dict:
+    def _fetch_mock_intel(self, ip_address: str) -> dict:
         """
         Simulates an API request to a Third-Party provider like AbuseIPDB or VirusTotal.
         Uses deterministic characteristics of the IP to generate realistic intel without network overhead.
         """
         # Hash the IP address to create deterministic "randomness"
         ip_hash = sum(ord(c) for c in ip_address)
-        
+
         # Determine reputation score based on IP hash
         score = (ip_hash * 17) % 100
-        
+
         # Tags
         possible_tags = ["Tor Exit Node", "Known Scanner", "Botnet C&C", "Spam Relay", "Brute-Forcer", "VPN"]
         tags = []

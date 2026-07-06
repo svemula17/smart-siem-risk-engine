@@ -1,6 +1,7 @@
 """Database migrations system."""
 import logging
 from datetime import datetime
+
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -74,16 +75,16 @@ class Migration:
 
     def init_migration_table(self):
         """Create migration tracking table."""
-        with self.db.begin():
-            self.db.execute(text("""
-                CREATE TABLE IF NOT EXISTS schema_migrations (
-                    id INTEGER PRIMARY KEY,
-                    version INTEGER UNIQUE NOT NULL,
-                    name VARCHAR NOT NULL,
-                    description VARCHAR,
-                    applied_at VARCHAR NOT NULL
-                )
-            """))
+        self.db.execute(text("""
+            CREATE TABLE IF NOT EXISTS schema_migrations (
+                id INTEGER PRIMARY KEY,
+                version INTEGER UNIQUE NOT NULL,
+                name VARCHAR NOT NULL,
+                description VARCHAR,
+                applied_at VARCHAR NOT NULL
+            )
+        """))
+        self.db.commit()
 
     def get_current_version(self) -> int:
         """Get current schema version."""
@@ -93,32 +94,43 @@ class Migration:
         return result or 0
 
     def apply_migration(self, migration: dict) -> bool:
-        """Apply a migration."""
+        """Apply a migration. Statements run one at a time (sqlite3 limitation);
+        the version is recorded even for no-op migrations so they never re-run."""
+        version = migration["version"]
         try:
-            version = migration["version"]
             if self.get_current_version() >= version:
                 logger.info(f"Migration {version} already applied")
                 return True
 
-            if migration.get("up"):
-                logger.info(f"Applying migration {version}: {migration['name']}")
-                with self.db.begin():
-                    self.db.execute(text(migration["up"]))
+            logger.info(f"Applying migration {version}: {migration['name']}")
+            for statement in (migration.get("up") or "").split(";"):
+                statement = statement.strip()
+                if not statement:
+                    continue
+                try:
+                    self.db.execute(text(statement))
+                except Exception as e:
+                    # Idempotency: re-adding an existing column is fine
+                    if "duplicate column" in str(e).lower():
+                        self.db.rollback()
+                        continue
+                    raise
 
-                with self.db.begin():
-                    self.db.execute(text(
-                        "INSERT INTO schema_migrations (version, name, description, applied_at) "
-                        "VALUES (:version, :name, :description, :applied_at)"
-                    ), {
-                        "version": version,
-                        "name": migration["name"],
-                        "description": migration.get("description", ""),
-                        "applied_at": datetime.utcnow().isoformat(),
-                    })
+            self.db.execute(text(
+                "INSERT INTO schema_migrations (version, name, description, applied_at) "
+                "VALUES (:version, :name, :description, :applied_at)"
+            ), {
+                "version": version,
+                "name": migration["name"],
+                "description": migration.get("description", ""),
+                "applied_at": datetime.utcnow().isoformat(),
+            })
+            self.db.commit()
 
             logger.info(f"Migration {version} applied successfully")
             return True
         except Exception as e:
+            self.db.rollback()
             logger.error(f"Migration {version} failed: {e}")
             return False
 

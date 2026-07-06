@@ -1,13 +1,14 @@
 """API key management endpoints."""
-from datetime import datetime, timedelta
-from typing import List
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from app.api.deps import AuthenticatedUser, get_current_user
 from app.database import get_db
 from app.models.db_models import APIKeyDB, UserDB
-from app.security import api_key_manager, _hash_secret
+from app.security import _hash_secret, api_key_manager
 from app.services.audit_logger import log_action
 
 router = APIRouter(prefix="/api/v1/api-keys", tags=["API Keys"])
@@ -34,8 +35,11 @@ class APIKeyListResponse(BaseModel):
 
 @router.post("", response_model=APIKeyResponse)
 def create_api_key(
-    req: APIKeyCreateRequest, user_id: int = 1, db: Session = Depends(get_db)
+    req: APIKeyCreateRequest,
+    db: Session = Depends(get_db),
+    current: AuthenticatedUser = Depends(get_current_user),
 ):
+    user_id = current.user_id
     """Create a new API key. Secret is shown only once."""
     user = db.query(UserDB).filter(UserDB.id == user_id).first()
     if not user:
@@ -58,8 +62,12 @@ def create_api_key(
     return APIKeyResponse(key=key, secret=secret, name=req.name, created_at=api_key.created_at)
 
 
-@router.get("", response_model=List[APIKeyListResponse])
-def list_api_keys(user_id: int = 1, db: Session = Depends(get_db)):
+@router.get("", response_model=list[APIKeyListResponse])
+def list_api_keys(
+    db: Session = Depends(get_db),
+    current: AuthenticatedUser = Depends(get_current_user),
+):
+    user_id = current.user_id
     """List all API keys for the current user."""
     keys = db.query(APIKeyDB).filter(APIKeyDB.user_id == user_id).all()
     return [
@@ -75,7 +83,12 @@ def list_api_keys(user_id: int = 1, db: Session = Depends(get_db)):
 
 
 @router.delete("/{key}")
-def revoke_api_key(key: str, user_id: int = 1, db: Session = Depends(get_db)):
+def revoke_api_key(
+    key: str,
+    db: Session = Depends(get_db),
+    current: AuthenticatedUser = Depends(get_current_user),
+):
+    user_id = current.user_id
     """Revoke an API key."""
     api_key = db.query(APIKeyDB).filter(APIKeyDB.key == key, APIKeyDB.user_id == user_id).first()
     if not api_key:

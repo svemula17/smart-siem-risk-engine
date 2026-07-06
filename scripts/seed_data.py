@@ -1,23 +1,21 @@
-import sys
 import os
+import sys
 
 # Add parent directory to path so we can import app modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.database import SessionLocal, engine, Base
-from app.models.db_models import CorrelationRuleDB, UserDB
+from app.database import Base, SessionLocal, engine
+from app.models.db_models import CorrelationRuleDB
+from app.services.auth_service import auth_service
+
 
 def seed_db():
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
-    
+
     try:
-        # Seed Users
-        if db.query(UserDB).count() == 0:
-            db.add(UserDB(username="admin", password_hash="hash", role="Admin"))
-            db.add(UserDB(username="analyst_1", password_hash="hash", role="Analyst"))
-            db.commit()
-            print("Users seeded.")
+        # Seed the initial admin (ADMIN_PASSWORD env or random, printed once)
+        auth_service.ensure_admin_user(db)
 
         # Seed Correlation Rules
         if db.query(CorrelationRuleDB).count() == 0:
@@ -42,7 +40,7 @@ def seed_db():
             db.add_all([rule1, rule2, rule3])
             db.commit()
             print("Rules seeded.")
-            
+
     finally:
         db.close()
 

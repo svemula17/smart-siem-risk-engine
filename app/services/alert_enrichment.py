@@ -1,10 +1,11 @@
 """Async alert enrichment with external data lookups."""
 import logging
-from typing import Optional, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime
+from typing import Any
+
 from sqlalchemy.orm import Session
 
-from app.models.db_models import NormalizedAlertDB, ScoredAlertDB, IOCDB, BlockedIPDB
+from app.models.db_models import IOCDB, BlockedIPDB, NormalizedAlertDB, ScoredAlertDB
 from app.services.geoip_enrichment import geoip_enrichment
 
 logger = logging.getLogger(__name__)
@@ -13,10 +14,10 @@ logger = logging.getLogger(__name__)
 class AlertEnricher:
     """Enrich alerts with external threat intelligence."""
 
-    def enrich_alert(self, db: Session, alert_id: int) -> Dict[str, Any]:
+    def enrich_alert(self, db: Session, alert_id: int) -> dict[str, Any]:
         """Enrich a scored alert with all available data."""
         norm = db.query(NormalizedAlertDB).filter(NormalizedAlertDB.id == alert_id).first()
-        scored = db.query(ScoredAlertDB).filter(ScoredAlertDB.raw_alert_id == norm.raw_alert_id).first()
+        _scored = db.query(ScoredAlertDB).filter(ScoredAlertDB.raw_alert_id == norm.raw_alert_id).first()
 
         enrichment = {
             "geo": None,
@@ -51,7 +52,7 @@ class AlertEnricher:
 
         return enrichment
 
-    def _check_ioc(self, db: Session, value: str) -> Optional[Dict[str, Any]]:
+    def _check_ioc(self, db: Session, value: str) -> dict[str, Any] | None:
         """Check if value matches any active IOC."""
         ioc = db.query(IOCDB).filter(
             IOCDB.value == value,
@@ -76,7 +77,7 @@ class AlertEnricher:
             }
         return None
 
-    def bulk_enrich(self, db: Session, alert_ids: list[int]) -> Dict[int, Dict[str, Any]]:
+    def bulk_enrich(self, db: Session, alert_ids: list[int]) -> dict[int, dict[str, Any]]:
         """Enrich multiple alerts efficiently."""
         results = {}
         for alert_id in alert_ids:

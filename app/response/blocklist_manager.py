@@ -1,12 +1,11 @@
 import json
 from pathlib import Path
-from typing import Any, Dict, List
-
+from typing import Any
 
 BLOCKLIST_FILE = Path("data/blocklist/blocked_ips.json")
 
 
-def load_blocklist() -> List[Dict[str, Any]]:
+def load_blocklist() -> list[dict[str, Any]]:
     if not BLOCKLIST_FILE.exists():
         return []
 
@@ -17,7 +16,7 @@ def load_blocklist() -> List[Dict[str, Any]]:
             return []
 
 
-def save_blocklist(entries: List[Dict[str, Any]]) -> None:
+def save_blocklist(entries: list[dict[str, Any]]) -> None:
     BLOCKLIST_FILE.parent.mkdir(parents=True, exist_ok=True)
 
     with BLOCKLIST_FILE.open("w", encoding="utf-8") as file:

@@ -1,7 +1,8 @@
 """Audit Log Routes"""
 from fastapi import APIRouter
+
 from app.database import SessionLocal
-from app.services.audit_logger import get_recent_logs, get_actor_summary
+from app.services.audit_logger import get_actor_summary, get_recent_logs
 
 router = APIRouter()
 

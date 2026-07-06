@@ -1,16 +1,20 @@
 """
 IOC (Indicators of Compromise) Management Routes
 """
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional, List
 
 from app.database import SessionLocal
-from app.services.ioc_manager import (
-    add_ioc, delete_ioc, get_all_iocs, get_ioc_stats,
-    match_alerts_to_ioc, seed_demo_iocs,
-)
 from app.services.audit_logger import log_action
+from app.services.ioc_manager import (
+    add_ioc,
+    delete_ioc,
+    get_all_iocs,
+    get_ioc_stats,
+    match_alerts_to_ioc,
+    seed_demo_iocs,
+)
 
 router = APIRouter()
 
@@ -21,8 +25,8 @@ class IOCCreate(BaseModel):
     severity: str = "High"
     source: str = "Manual"
     description: str = ""
-    tags: List[str] = []
-    expires_at: Optional[str] = None
+    tags: list[str] = []
+    expires_at: str | None = None
 
 
 @router.get("/api/v1/ioc/")

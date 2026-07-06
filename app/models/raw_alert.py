@@ -1,11 +1,10 @@
-from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
 
 class MitreInfo(BaseModel):
-    mitre_id: Optional[str] = None
-    technique: Optional[str] = None
+    mitre_id: str | None = None
+    technique: str | None = None
 
 
 class SuricataLog(BaseModel):
@@ -13,30 +12,30 @@ class SuricataLog(BaseModel):
     severity: int
     signature: str
     signature_id: str
-    mitre_ids: List[str] = []
+    mitre_ids: list[str] = []
 
 
 class ThreatIndicator(BaseModel):
     name: str
     type: str
-    ip: Optional[str] = None
+    ip: str | None = None
 
 
 class ThreatData(BaseModel):
-    indicator: List[ThreatIndicator] = []
+    indicator: list[ThreatIndicator] = []
 
 
 class Metadata(BaseModel):
-    mitre_info: List[MitreInfo] = []
-    suricata_logs: List[SuricataLog] = []
+    mitre_info: list[MitreInfo] = []
+    suricata_logs: list[SuricataLog] = []
     threat: ThreatData
 
 
 class EntityIds(BaseModel):
-    ip: List[str] = []
-    ips: List[str] = []
-    user: List[str] = []
-    host: List[str] = []
+    ip: list[str] = []
+    ips: list[str] = []
+    user: list[str] = []
+    host: list[str] = []
 
 
 class RawAlert(BaseModel):

@@ -3,7 +3,7 @@ import hashlib
 import hmac
 import json
 import time
-from typing import Optional, Dict, Any
+from typing import Any
 
 
 class WebhookSigner:
@@ -13,7 +13,7 @@ class WebhookSigner:
         """Initialize with webhook secret."""
         self.secret = secret.encode() if isinstance(secret, str) else secret
 
-    def sign_payload(self, payload: Dict[str, Any]) -> tuple[str, str]:
+    def sign_payload(self, payload: dict[str, Any]) -> tuple[str, str]:
         """Sign a webhook payload.
 
         Returns:
@@ -56,7 +56,7 @@ class WebhookSigner:
         return hmac.compare_digest(signature, expected)
 
 
-def create_webhook_headers(payload: Dict[str, Any], secret: str) -> Dict[str, str]:
+def create_webhook_headers(payload: dict[str, Any], secret: str) -> dict[str, str]:
     """Create headers for webhook request."""
     signer = WebhookSigner(secret)
     timestamp, signature = signer.sign_payload(payload)

@@ -1,11 +1,12 @@
 import json
 import logging
-from typing import List, Dict, Any
+from typing import Any
+
 from sqlalchemy.orm import Session
 
 from app.models.db_models import CorrelationRuleDB
-from app.models.scored_alert import ScoredAlert
 from app.models.normalized_alert import NormalizedAlert
+from app.models.scored_alert import ScoredAlert
 from app.services.incident_service import create_incident
 
 logger = logging.getLogger(__name__)
@@ -29,7 +30,7 @@ class CorrelationEngine:
 
         # In a real engine, this would use a complex in-memory windowing system (like Apache Flink)
         # For this simulation, we'll do query-based retroactive correlation.
-        
+
         try:
             norm_payload = normalized_alert.model_dump()
         except Exception:
@@ -42,9 +43,9 @@ class CorrelationEngine:
             except Exception as e:
                 logger.error(f"Error evaluating rule {rule.name}: {e}")
 
-    def _check_rule(self, db: Session, rule: CorrelationRuleDB, logic: Dict[str, Any], 
-                    current_scored: ScoredAlert, current_norm: NormalizedAlert, current_payload: Dict):
-        
+    def _check_rule(self, db: Session, rule: CorrelationRuleDB, logic: dict[str, Any],
+                    current_scored: ScoredAlert, current_norm: NormalizedAlert, current_payload: dict):
+
         # Example logic schema:
         # {
         #   "condition": "event_type == 'failed_login'",
@@ -52,20 +53,20 @@ class CorrelationEngine:
         #   "window_minutes": 10,
         #   "group_by": "source_ip"
         # }
-        
+
         # Simulated implementation matching "Brute Force" or similar basic rules
         condition_type = logic.get("type", "")
-        
+
         if condition_type == "mitre_tactic":
             mitre_target = logic.get("mitre_id", "")
             mitre_ids_list = current_norm.mitre_ids if current_norm.mitre_ids else []
             if mitre_target in mitre_ids_list and current_scored.risk_score >= logic.get("min_risk", 80):
-                
+
                 logger.info(f"Rule '{rule.name}' triggered by alert {current_scored.alert_id}")
-                
+
                 title = f"{rule.name} detected from {current_norm.source_ip}"
                 desc = f"Correlation rule '{rule.name}' triggered based on MITRE tactic {mitre_target}. "
-                
+
                 create_incident(
                     db=db,
                     title=title,

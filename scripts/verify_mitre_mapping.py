@@ -1,6 +1,4 @@
 import json
-import logging
-from sys import stdout
 
 from app.ingestion.loader import load_all_raw_alerts
 from app.normalization.mapper import normalize_alert
@@ -11,7 +9,7 @@ def main():
     print("="*60)
     print("🚀 INITIALIZING SMART SIEM TTP MAPPING VERIFICATION 🚀")
     print("="*60)
-    
+
     print("\n[+] Loading Raw Alerts from ingestion pipeline...")
     alerts = load_all_raw_alerts(RAW_ALERTS_DIR)
     print(f"[+] Loaded {len(alerts)} alerts.")
@@ -25,13 +23,13 @@ def main():
     for raw in alerts:
         # Ground Truth from datatset extraction (which we stored in mitre_info for validation)
         ground_truth_ttps = set(info.mitre_id for info in raw.metadata.mitre_info if info.mitre_id)
-        
+
         # PURE CODE LOGIC: Let the normalization engine extract the data
         normalized = normalize_alert(raw)
         extracted_ttps = set(normalized.mitre_ids)
 
         is_correct = ground_truth_ttps == extracted_ttps
-        
+
         total_evaluated += 1
         if is_correct:
             correct_mappings += 1
@@ -52,7 +50,7 @@ def main():
     print("-" * 60)
     # Print the first 10 that specifically had actual TTPs (ignoring completely benign ones for the showcase)
     showcase_alerts = [m for m in mapped_alerts if m["ground_truth_ttps"]][:10]
-    
+
     if not showcase_alerts:
         showcase_alerts = mapped_alerts[:10]
 
@@ -61,7 +59,7 @@ def main():
 
     # Show off the engine accuracy
     accuracy = (correct_mappings / total_evaluated) * 100 if total_evaluated > 0 else 0
-    
+
     print("\n" + "="*60)
     print("🏆 SIEM MITRE MAPPING ACCURACY REPORT 🏆")
     print("="*60)

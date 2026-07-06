@@ -1,8 +1,7 @@
-import os
 import csv
 import json
-import uuid
 import random
+import uuid
 from pathlib import Path
 
 # Paths
@@ -18,22 +17,22 @@ def get_severity(label):
 
 def process_ci_dataset(filepath, num_samples=None):
     samples = []
-    with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
+    with open(filepath, encoding='utf-8', errors='replace') as f:
         reader = csv.DictReader(f)
         rows = list(reader)
         if num_samples and len(rows) > num_samples:
             sampled_rows = random.sample(rows, num_samples)
         else:
             sampled_rows = rows
-            
+
         for row in sampled_rows:
             label = row.get(' Label', row.get('Label', 'BENIGN')).strip()
             src_ip = row.get(' Source IP', row.get('Source IP', '0.0.0.0')).strip()
             dest_ip = row.get(' Destination IP', row.get('Destination IP', '0.0.0.0')).strip()
             timestamp = row.get(' Timestamp', row.get('Timestamp', '2017-07-07T09:00:00')).strip()
-            
+
             category = "MALICIOUS" if label != "BENIGN" else "BENIGN"
-            
+
             alert = {
                 "id": str(uuid.uuid4()),
                 "group": "NETWORK",
@@ -74,28 +73,28 @@ def process_ci_dataset(filepath, num_samples=None):
 
 def process_zeek_dataset(filepath, num_samples=None):
     samples = []
-    with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
+    with open(filepath, encoding='utf-8', errors='replace') as f:
         reader = csv.DictReader(f)
         rows = list(reader)
         if num_samples and len(rows) > num_samples:
             sampled_rows = random.sample(rows, num_samples)
         else:
             sampled_rows = rows
-            
+
         for row in sampled_rows:
             is_malicious = row.get('label_binary', 'False').strip().lower() == 'true'
             tactic = row.get('label_tactic', 'None').strip()
             technique = row.get('label_technique', 'None').strip()
-            
+
             src_ip = row.get('src_ip_zeek', '0.0.0.0').strip()
             dest_ip = row.get('dest_ip_zeek', '0.0.0.0').strip()
             timestamp = row.get('datetime', '2024-01-01T00:00:00Z').strip()
-            
+
             category = "MALICIOUS" if is_malicious else "BENIGN"
             mitre_ids = [technique] if technique != 'none' else []
-            
+
             mitre_info = [{"mitre_id": technique, "technique": tactic}] if technique != 'none' else []
-            
+
             alert = {
                 "id": str(uuid.uuid4()),
                 "group": "NETWORK",
@@ -136,13 +135,13 @@ def process_zeek_dataset(filepath, num_samples=None):
 
 def main():
     Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
-    
+
     # clear existing files to stay clean
     for p in Path(OUTPUT_DIR).glob("*.json"):
         p.unlink()
 
     all_alerts = []
-    
+
     # Zeek
     zeek_dir = Path(ZEEK_DATASET_DIR)
     if zeek_dir.exists():
@@ -150,7 +149,7 @@ def main():
             print(f"Processing {csv_file.name} ...")
             alerts = process_zeek_dataset(csv_file)
             all_alerts.extend(alerts)
-            
+
     # CI Dataset
     ci_dir = Path(CI_DATASET_DIR)
     if ci_dir.exists():

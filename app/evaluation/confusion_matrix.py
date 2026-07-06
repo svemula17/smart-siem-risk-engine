@@ -1,9 +1,8 @@
-from typing import Dict, List
 
 from app.models.evaluation_result import EvaluationResult
 
 
-def calculate_evaluation_summary(results: List[EvaluationResult]) -> Dict[str, float]:
+def calculate_evaluation_summary(results: list[EvaluationResult]) -> dict[str, float]:
     total = len(results)
 
     if total == 0:

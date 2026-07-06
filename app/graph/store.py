@@ -1,10 +1,9 @@
 """Persist nodes and edges to SQLite with upsert semantics."""
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from app.models.db_models import GraphNodeDB, GraphEdgeDB
+from app.models.db_models import GraphEdgeDB, GraphNodeDB
 
 
 def _now() -> str:
@@ -15,7 +14,7 @@ def upsert_node(
     db: Session,
     node_type: str,
     value: str,
-    tier: Optional[str] = None,
+    tier: str | None = None,
     risk_delta: int = 0,
 ) -> GraphNodeDB:
     if not value:
@@ -51,9 +50,9 @@ def upsert_edge(
     src: GraphNodeDB,
     dst: GraphNodeDB,
     relation: str,
-    raw_alert_id: Optional[str] = None,
+    raw_alert_id: str | None = None,
     weight: float = 1.0,
-) -> Optional[GraphEdgeDB]:
+) -> GraphEdgeDB | None:
     if src is None or dst is None or src.id == dst.id:
         return None
     edge = (
@@ -88,7 +87,7 @@ def upsert_edge(
     return edge
 
 
-def classify_tier(node_type: str, value: str) -> Optional[str]:
+def classify_tier(node_type: str, value: str) -> str | None:
     """Best-effort tier classification — overridable later via UI."""
     if node_type == "ip":
         v = value or ""

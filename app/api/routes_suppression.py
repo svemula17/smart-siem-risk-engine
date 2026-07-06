@@ -2,9 +2,9 @@
 Suppression Rules Routes — Analyst-defined alert suppression rules.
 """
 from datetime import datetime
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional
 from sqlalchemy import desc
 
 from app.database import SessionLocal
@@ -16,12 +16,12 @@ router = APIRouter()
 
 class SuppressionRuleCreate(BaseModel):
     name: str
-    attack_type: Optional[str] = None
-    source_ip: Optional[str] = None
-    max_risk_score: Optional[int] = None
+    attack_type: str | None = None
+    source_ip: str | None = None
+    max_risk_score: int | None = None
     window_minutes: int = 60
     created_by: str = "admin"
-    expires_at: Optional[str] = None
+    expires_at: str | None = None
 
 
 @router.get("/api/v1/suppression-rules/")
