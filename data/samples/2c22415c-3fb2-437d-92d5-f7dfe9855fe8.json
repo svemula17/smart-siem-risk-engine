@@ -1,0 +1,44 @@
+{
+  "id": "2c22415c-3fb2-437d-92d5-f7dfe9855fe8",
+  "group": "NETWORK",
+  "type": "ids_alert",
+  "message": "ISCX Alert: PortScan",
+  "source": "iscx",
+  "status": "new",
+  "start_time": "7/7/2017 2:51",
+  "end_time": "7/7/2017 2:51",
+  "raw_severity": 1,
+  "ground_truth_label": "MALICIOUS",
+  "entity_ids": {
+    "ip": [
+      "172.16.0.1"
+    ],
+    "ips": [
+      "172.16.0.1",
+      "192.168.10.50"
+    ],
+    "user": [],
+    "host": []
+  },
+  "metadata": {
+    "mitre_info": [],
+    "suricata_logs": [
+      {
+        "category": "MALICIOUS",
+        "severity": 1,
+        "signature": "ISCX PortScan",
+        "signature_id": "0",
+        "mitre_ids": []
+      }
+    ],
+    "threat": {
+      "indicator": [
+        {
+          "name": "ISCX PortScan",
+          "type": "MALICIOUS",
+          "ip": "172.16.0.1"
+        }
+      ]
+    }
+  }
+}

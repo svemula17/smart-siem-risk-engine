@@ -1,0 +1,51 @@
+{
+  "id": "674f9b16-a2e7-4d87-84ab-5990d259fd4b",
+  "group": "NETWORK",
+  "type": "zeek_alert",
+  "message": "Zeek Alert: Credential Access",
+  "source": "zeek",
+  "status": "new",
+  "start_time": "2024-03-15T23:48:54.367Z",
+  "end_time": "2024-03-15T23:48:54.367Z",
+  "raw_severity": 1,
+  "ground_truth_label": "MALICIOUS",
+  "entity_ids": {
+    "ip": [
+      "143.88.7.11"
+    ],
+    "ips": [
+      "143.88.7.11",
+      "143.88.8.13"
+    ],
+    "user": [],
+    "host": []
+  },
+  "metadata": {
+    "mitre_info": [
+      {
+        "mitre_id": "T1110",
+        "technique": "Credential Access"
+      }
+    ],
+    "suricata_logs": [
+      {
+        "category": "MALICIOUS",
+        "severity": 1,
+        "signature": "Zeek Credential Access",
+        "signature_id": "0",
+        "mitre_ids": [
+          "T1110"
+        ]
+      }
+    ],
+    "threat": {
+      "indicator": [
+        {
+          "name": "Zeek Credential Access",
+          "type": "MALICIOUS",
+          "ip": "143.88.7.11"
+        }
+      ]
+    }
+  }
+}

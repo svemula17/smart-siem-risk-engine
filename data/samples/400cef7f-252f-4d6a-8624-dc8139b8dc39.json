@@ -1,0 +1,51 @@
+{
+  "id": "400cef7f-252f-4d6a-8624-dc8139b8dc39",
+  "group": "NETWORK",
+  "type": "zeek_alert",
+  "message": "Zeek Alert: Reconnaissance",
+  "source": "zeek",
+  "status": "new",
+  "start_time": "2024-03-01T17:08:56.387Z",
+  "end_time": "2024-03-01T17:08:56.387Z",
+  "raw_severity": 3,
+  "ground_truth_label": "MALICIOUS",
+  "entity_ids": {
+    "ip": [
+      "143.88.1.18"
+    ],
+    "ips": [
+      "143.88.1.18",
+      "143.88.2.17"
+    ],
+    "user": [],
+    "host": []
+  },
+  "metadata": {
+    "mitre_info": [
+      {
+        "mitre_id": "T1595",
+        "technique": "Reconnaissance"
+      }
+    ],
+    "suricata_logs": [
+      {
+        "category": "MALICIOUS",
+        "severity": 3,
+        "signature": "Zeek Reconnaissance",
+        "signature_id": "0",
+        "mitre_ids": [
+          "T1595"
+        ]
+      }
+    ],
+    "threat": {
+      "indicator": [
+        {
+          "name": "Zeek Reconnaissance",
+          "type": "MALICIOUS",
+          "ip": "143.88.1.18"
+        }
+      ]
+    }
+  }
+}

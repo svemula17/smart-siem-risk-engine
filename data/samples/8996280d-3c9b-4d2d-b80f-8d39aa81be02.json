@@ -1,0 +1,44 @@
+{
+  "id": "8996280d-3c9b-4d2d-b80f-8d39aa81be02",
+  "group": "NETWORK",
+  "type": "ids_alert",
+  "message": "ISCX Alert: Bot",
+  "source": "iscx",
+  "status": "new",
+  "start_time": "7/7/2017 10:37",
+  "end_time": "7/7/2017 10:37",
+  "raw_severity": 2,
+  "ground_truth_label": "MALICIOUS",
+  "entity_ids": {
+    "ip": [
+      "192.168.10.9"
+    ],
+    "ips": [
+      "192.168.10.9",
+      "205.174.165.73"
+    ],
+    "user": [],
+    "host": []
+  },
+  "metadata": {
+    "mitre_info": [],
+    "suricata_logs": [
+      {
+        "category": "MALICIOUS",
+        "severity": 2,
+        "signature": "ISCX Bot",
+        "signature_id": "0",
+        "mitre_ids": []
+      }
+    ],
+    "threat": {
+      "indicator": [
+        {
+          "name": "ISCX Bot",
+          "type": "MALICIOUS",
+          "ip": "192.168.10.9"
+        }
+      ]
+    }
+  }
+}

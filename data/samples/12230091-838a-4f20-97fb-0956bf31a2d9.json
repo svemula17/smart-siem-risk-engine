@@ -1,0 +1,51 @@
+{
+  "id": "12230091-838a-4f20-97fb-0956bf31a2d9",
+  "group": "NETWORK",
+  "type": "zeek_alert",
+  "message": "Zeek Alert: None",
+  "source": "zeek",
+  "status": "new",
+  "start_time": "2022-01-10T23:54:40.505Z",
+  "end_time": "2022-01-10T23:54:40.505Z",
+  "raw_severity": 0,
+  "ground_truth_label": "BENIGN",
+  "entity_ids": {
+    "ip": [
+      "0.0.0.0"
+    ],
+    "ips": [
+      "0.0.0.0",
+      "0.0.0.0"
+    ],
+    "user": [],
+    "host": []
+  },
+  "metadata": {
+    "mitre_info": [
+      {
+        "mitre_id": "None",
+        "technique": "None"
+      }
+    ],
+    "suricata_logs": [
+      {
+        "category": "BENIGN",
+        "severity": 0,
+        "signature": "Zeek None",
+        "signature_id": "0",
+        "mitre_ids": [
+          "None"
+        ]
+      }
+    ],
+    "threat": {
+      "indicator": [
+        {
+          "name": "Zeek None",
+          "type": "BENIGN",
+          "ip": "0.0.0.0"
+        }
+      ]
+    }
+  }
+}

@@ -1,4 +1,33 @@
+# Python
 venv/
+.venv/
 __pycache__/
 *.pyc
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Environment & secrets
+.env
+
+# Databases & runtime artifacts
 *.db
+*.sqlite3
+*.log
+*_output.txt
+
+# Runtime data & models (regenerated, never committed)
+data/*
+!data/samples/
+!data/blocklist.json
+app/scoring/models/*.pkl
+
+# Datasets (download separately — see README)
+Data Set/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

@@ -1,0 +1,44 @@
+{
+  "id": "2c7a8321-78e4-463e-a1ef-047341de4b28",
+  "group": "NETWORK",
+  "type": "ids_alert",
+  "message": "ISCX Alert: BENIGN",
+  "source": "iscx",
+  "status": "new",
+  "start_time": "7/7/2017 10:27",
+  "end_time": "7/7/2017 10:27",
+  "raw_severity": 0,
+  "ground_truth_label": "BENIGN",
+  "entity_ids": {
+    "ip": [
+      "184.29.174.203"
+    ],
+    "ips": [
+      "184.29.174.203",
+      "192.168.10.16"
+    ],
+    "user": [],
+    "host": []
+  },
+  "metadata": {
+    "mitre_info": [],
+    "suricata_logs": [
+      {
+        "category": "BENIGN",
+        "severity": 0,
+        "signature": "ISCX BENIGN",
+        "signature_id": "0",
+        "mitre_ids": []
+      }
+    ],
+    "threat": {
+      "indicator": [
+        {
+          "name": "ISCX BENIGN",
+          "type": "BENIGN",
+          "ip": "184.29.174.203"
+        }
+      ]
+    }
+  }
+}
