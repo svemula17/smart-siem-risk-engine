@@ -23,7 +23,8 @@ ignore = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q --cov=app --cov-report=term-missing:skip-covered"
+pythonpath = ["."]
+addopts = "-q --cov=app --cov-report=term-missing:skip-covered --cov-fail-under=50"
 
 [tool.coverage.run]
 omit = ["app/templates/*", "tests/*"]

@@ -1,0 +1,917 @@
+[
+ {
+  "id": "02a2167e-21a0-4902-91c8-31eb521f2889",
+  "group": "NETWORK",
+  "type": "ids_alert",
+  "message": "ISCX Alert: PortScan",
+  "source": "iscx",
+  "status": "new",
+  "start_time": "7/7/2017 2:55",
+  "end_time": "7/7/2017 2:55",
+  "raw_severity": 2,
+  "ground_truth_label": "MALICIOUS",
+  "entity_ids": {
+   "ip": [
+    "172.16.0.1"
+   ],
+   "ips": [
+    "172.16.0.1",
+    "192.168.10.50"
+   ],
+   "user": [],
+   "host": []
+  },
+  "metadata": {
+   "mitre_info": [],
+   "suricata_logs": [
+    {
+     "category": "MALICIOUS",
+     "severity": 3,
+     "signature": "ISCX PortScan",
+     "signature_id": "0",
+     "mitre_ids": []
+    }
+   ],
+   "threat": {
+    "indicator": [
+     {
+      "name": "ISCX PortScan",
+      "type": "MALICIOUS",
+      "ip": "172.16.0.1"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "id": "03def5f4-16d6-4f6e-a5ad-22b959819f6a",
+  "group": "NETWORK",
+  "type": "ids_alert",
+  "message": "ISCX Alert: BENIGN",
+  "source": "iscx",
+  "status": "new",
+  "start_time": "7/7/2017 10:17",
+  "end_time": "7/7/2017 10:17",
+  "raw_severity": 0,
+  "ground_truth_label": "BENIGN",
+  "entity_ids": {
+   "ip": [
+    "192.168.10.3"
+   ],
+   "ips": [
+    "192.168.10.3",
+    "192.168.10.1"
+   ],
+   "user": [],
+   "host": []
+  },
+  "metadata": {
+   "mitre_info": [],
+   "suricata_logs": [
+    {
+     "category": "BENIGN",
+     "severity": 0,
+     "signature": "ISCX BENIGN",
+     "signature_id": "0",
+     "mitre_ids": []
+    }
+   ],
+   "threat": {
+    "indicator": [
+     {
+      "name": "ISCX BENIGN",
+      "type": "BENIGN",
+      "ip": "192.168.10.3"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "id": "0611efe0-6775-435d-b7db-41a8891c705f",
+  "group": "NETWORK",
+  "type": "ids_alert",
+  "message": "ISCX Alert: BENIGN",
+  "source": "iscx",
+  "status": "new",
+  "start_time": "7/7/2017 10:12",
+  "end_time": "7/7/2017 10:12",
+  "raw_severity": 0,
+  "ground_truth_label": "BENIGN",
+  "entity_ids": {
+   "ip": [
+    "192.168.10.14"
+   ],
+   "ips": [
+    "192.168.10.14",
+    "192.30.253.112"
+   ],
+   "user": [],
+   "host": []
+  },
+  "metadata": {
+   "mitre_info": [],
+   "suricata_logs": [
+    {
+     "category": "BENIGN",
+     "severity": 0,
+     "signature": "ISCX BENIGN",
+     "signature_id": "0",
+     "mitre_ids": []
+    }
+   ],
+   "threat": {
+    "indicator": [
+     {
+      "name": "ISCX BENIGN",
+      "type": "BENIGN",
+      "ip": "192.168.10.14"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "id": "08c8feef-b532-4de5-9586-9d305c58a44a",
+  "group": "NETWORK",
+  "type": "ids_alert",
+  "message": "ISCX Alert: BENIGN",
+  "source": "iscx",
+  "status": "new",
+  "start_time": "7/7/2017 2:12",
+  "end_time": "7/7/2017 2:12",
+  "raw_severity": 0,
+  "ground_truth_label": "BENIGN",
+  "entity_ids": {
+   "ip": [
+    "192.168.10.50"
+   ],
+   "ips": [
+    "192.168.10.50",
+    "192.168.10.15"
+   ],
+   "user": [],
+   "host": []
+  },
+  "metadata": {
+   "mitre_info": [],
+   "suricata_logs": [
+    {
+     "category": "BENIGN",
+     "severity": 0,
+     "signature": "ISCX BENIGN",
+     "signature_id": "0",
+     "mitre_ids": []
+    }
+   ],
+   "threat": {
+    "indicator": [
+     {
+      "name": "ISCX BENIGN",
+      "type": "BENIGN",
+      "ip": "192.168.10.50"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "id": "08ec3a6a-1949-4514-bf2e-7d39ec2d768f",
+  "group": "NETWORK",
+  "type": "ids_alert",
+  "message": "ISCX Alert: PortScan",
+  "source": "iscx",
+  "status": "new",
+  "start_time": "7/7/2017 2:52",
+  "end_time": "7/7/2017 2:52",
+  "raw_severity": 3,
+  "ground_truth_label": "MALICIOUS",
+  "entity_ids": {
+   "ip": [
+    "172.16.0.1"
+   ],
+   "ips": [
+    "172.16.0.1",
+    "192.168.10.50"
+   ],
+   "user": [],
+   "host": []
+  },
+  "metadata": {
+   "mitre_info": [],
+   "suricata_logs": [
+    {
+     "category": "MALICIOUS",
+     "severity": 2,
+     "signature": "ISCX PortScan",
+     "signature_id": "0",
+     "mitre_ids": []
+    }
+   ],
+   "threat": {
+    "indicator": [
+     {
+      "name": "ISCX PortScan",
+      "type": "MALICIOUS",
+      "ip": "172.16.0.1"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "id": "09982077-6194-42c3-b2d2-41b0dd606389",
+  "group": "NETWORK",
+  "type": "zeek_alert",
+  "message": "Zeek Alert: Credential Access",
+  "source": "zeek",
+  "status": "new",
+  "start_time": "2024-03-19T17:06:25.531Z",
+  "end_time": "2024-03-19T17:06:25.531Z",
+  "raw_severity": 3,
+  "ground_truth_label": "MALICIOUS",
+  "entity_ids": {
+   "ip": [
+    "143.88.3.11"
+   ],
+   "ips": [
+    "143.88.3.11",
+    "143.88.4.13"
+   ],
+   "user": [],
+   "host": []
+  },
+  "metadata": {
+   "mitre_info": [
+    {
+     "mitre_id": "T1110",
+     "technique": "Credential Access"
+    }
+   ],
+   "suricata_logs": [
+    {
+     "category": "MALICIOUS",
+     "severity": 1,
+     "signature": "Zeek Credential Access",
+     "signature_id": "0",
+     "mitre_ids": [
+      "T1110"
+     ]
+    }
+   ],
+   "threat": {
+    "indicator": [
+     {
+      "name": "Zeek Credential Access",
+      "type": "MALICIOUS",
+      "ip": "143.88.3.11"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "id": "0c39d1a9-3602-4dca-9839-1904cbac4a1c",
+  "group": "NETWORK",
+  "type": "ids_alert",
+  "message": "ISCX Alert: BENIGN",
+  "source": "iscx",
+  "status": "new",
+  "start_time": "7/7/2017 3:29",
+  "end_time": "7/7/2017 3:29",
+  "raw_severity": 0,
+  "ground_truth_label": "BENIGN",
+  "entity_ids": {
+   "ip": [
+    "192.168.10.16"
+   ],
+   "ips": [
+    "192.168.10.16",
+    "199.244.48.55"
+   ],
+   "user": [],
+   "host": []
+  },
+  "metadata": {
+   "mitre_info": [],
+   "suricata_logs": [
+    {
+     "category": "BENIGN",
+     "severity": 0,
+     "signature": "ISCX BENIGN",
+     "signature_id": "0",
+     "mitre_ids": []
+    }
+   ],
+   "threat": {
+    "indicator": [
+     {
+      "name": "ISCX BENIGN",
+      "type": "BENIGN",
+      "ip": "192.168.10.16"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "id": "0c8b0026-e08f-46d1-9829-c9f7042c241b",
+  "group": "NETWORK",
+  "type": "ids_alert",
+  "message": "ISCX Alert: BENIGN",
+  "source": "iscx",
+  "status": "new",
+  "start_time": "7/7/2017 9:25",
+  "end_time": "7/7/2017 9:25",
+  "raw_severity": 0,
+  "ground_truth_label": "BENIGN",
+  "entity_ids": {
+   "ip": [
+    "192.168.10.15"
+   ],
+   "ips": [
+    "192.168.10.15",
+    "192.168.10.3"
+   ],
+   "user": [],
+   "host": []
+  },
+  "metadata": {
+   "mitre_info": [],
+   "suricata_logs": [
+    {
+     "category": "BENIGN",
+     "severity": 0,
+     "signature": "ISCX BENIGN",
+     "signature_id": "0",
+     "mitre_ids": []
+    }
+   ],
+   "threat": {
+    "indicator": [
+     {
+      "name": "ISCX BENIGN",
+      "type": "BENIGN",
+      "ip": "192.168.10.15"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "id": "0ca10664-b004-4e5f-a805-455e34ea524c",
+  "group": "NETWORK",
+  "type": "ids_alert",
+  "message": "ISCX Alert: BENIGN",
+  "source": "iscx",
+  "status": "new",
+  "start_time": "7/7/2017 10:07",
+  "end_time": "7/7/2017 10:07",
+  "raw_severity": 0,
+  "ground_truth_label": "BENIGN",
+  "entity_ids": {
+   "ip": [
+    "192.168.10.3"
+   ],
+   "ips": [
+    "192.168.10.3",
+    "192.168.10.1"
+   ],
+   "user": [],
+   "host": []
+  },
+  "metadata": {
+   "mitre_info": [],
+   "suricata_logs": [
+    {
+     "category": "BENIGN",
+     "severity": 0,
+     "signature": "ISCX BENIGN",
+     "signature_id": "0",
+     "mitre_ids": []
+    }
+   ],
+   "threat": {
+    "indicator": [
+     {
+      "name": "ISCX BENIGN",
+      "type": "BENIGN",
+      "ip": "192.168.10.3"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "id": "0d29d8a2-0ece-48d6-9a96-c46129a57a47",
+  "group": "NETWORK",
+  "type": "ids_alert",
+  "message": "ISCX Alert: PortScan",
+  "source": "iscx",
+  "status": "new",
+  "start_time": "7/7/2017 2:52",
+  "end_time": "7/7/2017 2:52",
+  "raw_severity": 2,
+  "ground_truth_label": "MALICIOUS",
+  "entity_ids": {
+   "ip": [
+    "172.16.0.1"
+   ],
+   "ips": [
+    "172.16.0.1",
+    "192.168.10.50"
+   ],
+   "user": [],
+   "host": []
+  },
+  "metadata": {
+   "mitre_info": [],
+   "suricata_logs": [
+    {
+     "category": "MALICIOUS",
+     "severity": 3,
+     "signature": "ISCX PortScan",
+     "signature_id": "0",
+     "mitre_ids": []
+    }
+   ],
+   "threat": {
+    "indicator": [
+     {
+      "name": "ISCX PortScan",
+      "type": "MALICIOUS",
+      "ip": "172.16.0.1"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "id": "0fa60f84-767b-46b3-83bd-c62f662c2629",
+  "group": "NETWORK",
+  "type": "ids_alert",
+  "message": "ISCX Alert: BENIGN",
+  "source": "iscx",
+  "status": "new",
+  "start_time": "7/7/2017 10:17",
+  "end_time": "7/7/2017 10:17",
+  "raw_severity": 0,
+  "ground_truth_label": "BENIGN",
+  "entity_ids": {
+   "ip": [
+    "162.208.20.178"
+   ],
+   "ips": [
+    "162.208.20.178",
+    "192.168.10.5"
+   ],
+   "user": [],
+   "host": []
+  },
+  "metadata": {
+   "mitre_info": [],
+   "suricata_logs": [
+    {
+     "category": "BENIGN",
+     "severity": 0,
+     "signature": "ISCX BENIGN",
+     "signature_id": "0",
+     "mitre_ids": []
+    }
+   ],
+   "threat": {
+    "indicator": [
+     {
+      "name": "ISCX BENIGN",
+      "type": "BENIGN",
+      "ip": "162.208.20.178"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "id": "0fcf328e-0767-4682-b75a-6285a97a9c7b",
+  "group": "NETWORK",
+  "type": "ids_alert",
+  "message": "ISCX Alert: BENIGN",
+  "source": "iscx",
+  "status": "new",
+  "start_time": "7/7/2017 11:17",
+  "end_time": "7/7/2017 11:17",
+  "raw_severity": 0,
+  "ground_truth_label": "BENIGN",
+  "entity_ids": {
+   "ip": [
+    "192.168.10.5"
+   ],
+   "ips": [
+    "192.168.10.5",
+    "185.13.208.24"
+   ],
+   "user": [],
+   "host": []
+  },
+  "metadata": {
+   "mitre_info": [],
+   "suricata_logs": [
+    {
+     "category": "BENIGN",
+     "severity": 0,
+     "signature": "ISCX BENIGN",
+     "signature_id": "0",
+     "mitre_ids": []
+    }
+   ],
+   "threat": {
+    "indicator": [
+     {
+      "name": "ISCX BENIGN",
+      "type": "BENIGN",
+      "ip": "192.168.10.5"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "id": "0feb8880-3b39-4709-a8b8-2fc1ac77e346",
+  "group": "NETWORK",
+  "type": "ids_alert",
+  "message": "ISCX Alert: BENIGN",
+  "source": "iscx",
+  "status": "new",
+  "start_time": "7/7/2017 9:19",
+  "end_time": "7/7/2017 9:19",
+  "raw_severity": 0,
+  "ground_truth_label": "BENIGN",
+  "entity_ids": {
+   "ip": [
+    "192.168.10.15"
+   ],
+   "ips": [
+    "192.168.10.15",
+    "192.168.10.50"
+   ],
+   "user": [],
+   "host": []
+  },
+  "metadata": {
+   "mitre_info": [],
+   "suricata_logs": [
+    {
+     "category": "BENIGN",
+     "severity": 0,
+     "signature": "ISCX BENIGN",
+     "signature_id": "0",
+     "mitre_ids": []
+    }
+   ],
+   "threat": {
+    "indicator": [
+     {
+      "name": "ISCX BENIGN",
+      "type": "BENIGN",
+      "ip": "192.168.10.15"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "id": "12230091-838a-4f20-97fb-0956bf31a2d9",
+  "group": "NETWORK",
+  "type": "zeek_alert",
+  "message": "Zeek Alert: None",
+  "source": "zeek",
+  "status": "new",
+  "start_time": "2022-01-10T23:54:40.505Z",
+  "end_time": "2022-01-10T23:54:40.505Z",
+  "raw_severity": 0,
+  "ground_truth_label": "BENIGN",
+  "entity_ids": {
+   "ip": [
+    "0.0.0.0"
+   ],
+   "ips": [
+    "0.0.0.0",
+    "0.0.0.0"
+   ],
+   "user": [],
+   "host": []
+  },
+  "metadata": {
+   "mitre_info": [
+    {
+     "mitre_id": "None",
+     "technique": "None"
+    }
+   ],
+   "suricata_logs": [
+    {
+     "category": "BENIGN",
+     "severity": 0,
+     "signature": "Zeek None",
+     "signature_id": "0",
+     "mitre_ids": [
+      "None"
+     ]
+    }
+   ],
+   "threat": {
+    "indicator": [
+     {
+      "name": "Zeek None",
+      "type": "BENIGN",
+      "ip": "0.0.0.0"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "id": "14554565-beca-4313-9370-0517cb3a7e2c",
+  "group": "NETWORK",
+  "type": "zeek_alert",
+  "message": "Zeek Alert: Credential Access",
+  "source": "zeek",
+  "status": "new",
+  "start_time": "2024-02-28T22:07:30.236Z",
+  "end_time": "2024-02-28T22:07:30.236Z",
+  "raw_severity": 1,
+  "ground_truth_label": "MALICIOUS",
+  "entity_ids": {
+   "ip": [
+    "143.88.4.11"
+   ],
+   "ips": [
+    "143.88.4.11",
+    "143.88.5.12"
+   ],
+   "user": [],
+   "host": []
+  },
+  "metadata": {
+   "mitre_info": [
+    {
+     "mitre_id": "T1110",
+     "technique": "Credential Access"
+    }
+   ],
+   "suricata_logs": [
+    {
+     "category": "MALICIOUS",
+     "severity": 1,
+     "signature": "Zeek Credential Access",
+     "signature_id": "0",
+     "mitre_ids": [
+      "T1110"
+     ]
+    }
+   ],
+   "threat": {
+    "indicator": [
+     {
+      "name": "Zeek Credential Access",
+      "type": "MALICIOUS",
+      "ip": "143.88.4.11"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "id": "14a73dac-e6c4-4453-b243-ca5942ff642e",
+  "group": "NETWORK",
+  "type": "zeek_alert",
+  "message": "Zeek Alert: Credential Access",
+  "source": "zeek",
+  "status": "new",
+  "start_time": "2024-02-29T12:45:39.505Z",
+  "end_time": "2024-02-29T12:45:39.505Z",
+  "raw_severity": 3,
+  "ground_truth_label": "MALICIOUS",
+  "entity_ids": {
+   "ip": [
+    "143.88.6.11"
+   ],
+   "ips": [
+    "143.88.6.11",
+    "143.88.7.14"
+   ],
+   "user": [],
+   "host": []
+  },
+  "metadata": {
+   "mitre_info": [
+    {
+     "mitre_id": "T1110",
+     "technique": "Credential Access"
+    }
+   ],
+   "suricata_logs": [
+    {
+     "category": "MALICIOUS",
+     "severity": 3,
+     "signature": "Zeek Credential Access",
+     "signature_id": "0",
+     "mitre_ids": [
+      "T1110"
+     ]
+    }
+   ],
+   "threat": {
+    "indicator": [
+     {
+      "name": "Zeek Credential Access",
+      "type": "MALICIOUS",
+      "ip": "143.88.6.11"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "id": "17600054-0dea-4c97-98d3-812cc804f3fc",
+  "group": "NETWORK",
+  "type": "ids_alert",
+  "message": "ISCX Alert: PortScan",
+  "source": "iscx",
+  "status": "new",
+  "start_time": "7/7/2017 2:52",
+  "end_time": "7/7/2017 2:52",
+  "raw_severity": 2,
+  "ground_truth_label": "MALICIOUS",
+  "entity_ids": {
+   "ip": [
+    "172.16.0.1"
+   ],
+   "ips": [
+    "172.16.0.1",
+    "192.168.10.50"
+   ],
+   "user": [],
+   "host": []
+  },
+  "metadata": {
+   "mitre_info": [],
+   "suricata_logs": [
+    {
+     "category": "MALICIOUS",
+     "severity": 1,
+     "signature": "ISCX PortScan",
+     "signature_id": "0",
+     "mitre_ids": []
+    }
+   ],
+   "threat": {
+    "indicator": [
+     {
+      "name": "ISCX PortScan",
+      "type": "MALICIOUS",
+      "ip": "172.16.0.1"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "id": "1ee5464e-a40f-407e-aeeb-e223895796af",
+  "group": "NETWORK",
+  "type": "ids_alert",
+  "message": "ISCX Alert: PortScan",
+  "source": "iscx",
+  "status": "new",
+  "start_time": "7/7/2017 2:52",
+  "end_time": "7/7/2017 2:52",
+  "raw_severity": 1,
+  "ground_truth_label": "MALICIOUS",
+  "entity_ids": {
+   "ip": [
+    "172.16.0.1"
+   ],
+   "ips": [
+    "172.16.0.1",
+    "192.168.10.50"
+   ],
+   "user": [],
+   "host": []
+  },
+  "metadata": {
+   "mitre_info": [],
+   "suricata_logs": [
+    {
+     "category": "MALICIOUS",
+     "severity": 1,
+     "signature": "ISCX PortScan",
+     "signature_id": "0",
+     "mitre_ids": []
+    }
+   ],
+   "threat": {
+    "indicator": [
+     {
+      "name": "ISCX PortScan",
+      "type": "MALICIOUS",
+      "ip": "172.16.0.1"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "id": "23172478-ae66-4dfd-a5b7-6bf4f8aef765",
+  "group": "NETWORK",
+  "type": "ids_alert",
+  "message": "ISCX Alert: PortScan",
+  "source": "iscx",
+  "status": "new",
+  "start_time": "7/7/2017 3:22",
+  "end_time": "7/7/2017 3:22",
+  "raw_severity": 2,
+  "ground_truth_label": "MALICIOUS",
+  "entity_ids": {
+   "ip": [
+    "172.16.0.1"
+   ],
+   "ips": [
+    "172.16.0.1",
+    "192.168.10.50"
+   ],
+   "user": [],
+   "host": []
+  },
+  "metadata": {
+   "mitre_info": [],
+   "suricata_logs": [
+    {
+     "category": "MALICIOUS",
+     "severity": 2,
+     "signature": "ISCX PortScan",
+     "signature_id": "0",
+     "mitre_ids": []
+    }
+   ],
+   "threat": {
+    "indicator": [
+     {
+      "name": "ISCX PortScan",
+      "type": "MALICIOUS",
+      "ip": "172.16.0.1"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "id": "2368ce6c-48ea-4145-aac2-a29c59a9de2c",
+  "group": "NETWORK",
+  "type": "zeek_alert",
+  "message": "Zeek Alert: Credential Access",
+  "source": "zeek",
+  "status": "new",
+  "start_time": "2024-03-16T15:25:56.307Z",
+  "end_time": "2024-03-16T15:25:56.307Z",
+  "raw_severity": 2,
+  "ground_truth_label": "MALICIOUS",
+  "entity_ids": {
+   "ip": [
+    "143.88.6.11"
+   ],
+   "ips": [
+    "143.88.6.11",
+    "143.88.7.14"
+   ],
+   "user": [],
+   "host": []
+  },
+  "metadata": {
+   "mitre_info": [
+    {
+     "mitre_id": "T1110",
+     "technique": "Credential Access"
+    }
+   ],
+   "suricata_logs": [
+    {
+     "category": "MALICIOUS",
+     "severity": 3,
+     "signature": "Zeek Credential Access",
+     "signature_id": "0",
+     "mitre_ids": [
+      "T1110"
+     ]
+    }
+   ],
+   "threat": {
+    "indicator": [
+     {
+      "name": "Zeek Credential Access",
+      "type": "MALICIOUS",
+      "ip": "143.88.6.11"
+     }
+    ]
+   }
+  }
+ }
+]
