@@ -2,9 +2,10 @@
 IOC (Indicators of Compromise) Management Routes
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from app.api.deps import require_role
 from app.database import SessionLocal
 from app.services.audit_logger import log_action
 from app.services.ioc_manager import (
@@ -110,5 +111,32 @@ def check_ip(ip: str):
     try:
         result = check_ip_against_ioc(db, ip)
         return {"ip": ip, "is_ioc": bool(result), "ioc": result}
+    finally:
+        db.close()
+
+
+# ── Live threat-intel feeds ────────────────────────────────────────────────────
+
+@router.get("/api/v1/intel/feeds/status")
+def feed_status():
+    """Sync state for each configured threat-intel feed."""
+    from app.services.threat_feeds import get_feed_status
+    db = SessionLocal()
+    try:
+        return {"feeds": get_feed_status(db)}
+    finally:
+        db.close()
+
+
+@router.post("/api/v1/intel/sync")
+def trigger_feed_sync(_admin=Depends(require_role("Admin"))):
+    """Run all feed syncs now (no-op for feeds without API keys)."""
+    from app.services.threat_feeds import sync_all
+    db = SessionLocal()
+    try:
+        result = sync_all(db)
+        log_action(db, actor="admin", action="intel_sync", target="feeds",
+                   detail=str(result))
+        return {"status": "ok", "result": result}
     finally:
         db.close()

@@ -24,6 +24,7 @@ from app.api.routes_forecast import router as forecast_router
 from app.api.routes_graph import router as graph_router
 from app.api.routes_health import router as health_router
 from app.api.routes_incidents import router as incidents_router
+from app.api.routes_ingest import router as ingest_router
 from app.api.routes_ioc import router as ioc_router
 from app.api.routes_metrics import router as metrics_router
 from app.api.routes_mitre import router as mitre_router
@@ -128,11 +129,30 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"[graph] startup init failed: {e}")
 
+    # Periodic threat-intel feed sync (no-op per feed when keys unset)
+    import asyncio
+
+    from app.services.threat_feeds import feed_sync_loop
+    feed_task = asyncio.create_task(feed_sync_loop())
+
+    # Syslog listener (RFC 3164/5424 + CEF) when enabled
+    syslog_server = None
+    if settings.SYSLOG_ENABLED:
+        try:
+            from app.ingestion.syslog.server import SyslogServer
+            syslog_server = SyslogServer()
+            await syslog_server.start()
+        except Exception as e:
+            print(f"[syslog] failed to start: {e}")
+
     if settings.AUTO_PIPELINE and settings.DEMO_MODE:
         launch_pipeline()
 
     yield
 
+    feed_task.cancel()
+    if syslog_server:
+        await syslog_server.stop()
     stop_pipeline()
 
 
@@ -201,5 +221,6 @@ app.include_router(playbooks_router,   tags=["Playbooks"], dependencies=AUTH)
 app.include_router(network_router,     tags=["Network"], dependencies=AUTH)
 app.include_router(mitre_router,       tags=["MITRE"], dependencies=AUTH)
 app.include_router(sigma_router,       tags=["Sigma"], dependencies=AUTH)
+app.include_router(ingest_router,      tags=["Ingestion"], dependencies=AUTH)
 app.include_router(pivot_router,       tags=["Pivot"], dependencies=AUTH)
 app.include_router(graph_router,       tags=["Graph"], dependencies=AUTH)

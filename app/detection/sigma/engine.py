@@ -6,6 +6,7 @@ risk score by level and are recorded in sigma_matches.
 """
 import json
 import logging
+import threading
 from datetime import datetime
 from pathlib import Path
 
@@ -27,35 +28,44 @@ class SigmaEngine:
     def __init__(self):
         self._cache: list[SigmaRule] | None = None
         self._synced = False
+        self._sync_lock = threading.Lock()
 
     # ── rule loading ──────────────────────────────────────────────────────────
 
     def sync_bundled_rules(self, db: Session) -> int:
-        """Load rules/sigma/*.yml into the DB once (no overwrite of uploads)."""
+        """Load rules/sigma/*.yml into the DB once (no overwrite of uploads).
+
+        Safe under concurrency: per-rule commit with rollback on the UNIQUE
+        conflict another thread/process may have caused.
+        """
         count = 0
         if not RULES_DIR.is_dir():
             return 0
-        for path in sorted(RULES_DIR.glob("*.yml")):
-            try:
-                rule = parse_rule(path.read_text())
-            except SigmaParseError as e:
-                logger.warning(f"[sigma] skipping {path.name}: {e}")
-                continue
-            if db.query(SigmaRuleDB).filter_by(rule_uid=rule.rule_uid).first():
-                continue
-            db.add(SigmaRuleDB(
-                rule_uid=rule.rule_uid,
-                title=rule.title,
-                level=rule.level,
-                tags_json=json.dumps(rule.tags),
-                yaml_text=rule.yaml_text,
-                source="bundled",
-                is_active=True,
-                created_at=datetime.utcnow().isoformat(),
-            ))
-            count += 1
+        with self._sync_lock:
+            for path in sorted(RULES_DIR.glob("*.yml")):
+                try:
+                    rule = parse_rule(path.read_text())
+                except SigmaParseError as e:
+                    logger.warning(f"[sigma] skipping {path.name}: {e}")
+                    continue
+                if db.query(SigmaRuleDB).filter_by(rule_uid=rule.rule_uid).first():
+                    continue
+                try:
+                    db.add(SigmaRuleDB(
+                        rule_uid=rule.rule_uid,
+                        title=rule.title,
+                        level=rule.level,
+                        tags_json=json.dumps(rule.tags),
+                        yaml_text=rule.yaml_text,
+                        source="bundled",
+                        is_active=True,
+                        created_at=datetime.utcnow().isoformat(),
+                    ))
+                    db.commit()
+                    count += 1
+                except Exception:
+                    db.rollback()  # another worker inserted it first
         if count:
-            db.commit()
             logger.info(f"[sigma] synced {count} bundled rules")
         return count
 

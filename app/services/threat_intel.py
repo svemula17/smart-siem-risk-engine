@@ -30,12 +30,17 @@ class ThreatIntelService:
     def get_intel_for_ip(self, ip_address: str) -> dict | None:
         """
         Retrieves threat intelligence for an IP address.
-        Since we want to avoid requiring API keys from the user, this is a local mock
-        with simulated latency and cached responses.
+        Live IOC data (synced from AbuseIPDB/OTX or added manually) wins; the
+        deterministic local mock is the keyless fallback.
         Returns a dict: {"score": int (0-100), "tags": list[str], "provider": str}
         """
         if not ip_address:
             return None
+
+        # Live IOC table first (feed-synced or analyst-added indicators)
+        live = self._lookup_ioc_table(ip_address)
+        if live:
+            return live
 
         # Check cache
         try:
@@ -56,6 +61,27 @@ class ThreatIntelService:
 
         # Stub Integration Logic
         return self._fetch_mock_intel(ip_address)
+
+    def _lookup_ioc_table(self, ip_address: str) -> dict | None:
+        """Return intel derived from an active IOC row, or None."""
+        severity_scores = {"Critical": 95, "High": 80, "Medium": 65, "Low": 40}
+        try:
+            from app.database import SessionLocal
+            from app.services.ioc_manager import check_ip_against_ioc
+            db = SessionLocal()
+            try:
+                ioc = check_ip_against_ioc(db, ip_address)
+            finally:
+                db.close()
+            if ioc:
+                return {
+                    "score": severity_scores.get(ioc.get("severity"), 65),
+                    "tags": ioc.get("tags") or [],
+                    "provider": ioc.get("source") or "IOC",
+                }
+        except Exception as e:
+            logger.debug(f"IOC lookup failed for {ip_address}: {e}")
+        return None
 
     def _fetch_mock_intel(self, ip_address: str) -> dict:
         """
