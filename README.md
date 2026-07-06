@@ -36,6 +36,18 @@ This is not a toy — it reflects how real threat detection pipelines are engine
 
 ---
 
+## ✨ What's New (v3.2)
+
+- **🧾 Sigma Detection Rules** — industry-standard YAML detection rules evaluated against every event; 12 curated rules bundled, upload/toggle/dry-run via `/api/v1/sigma/*`; matches boost risk scores by rule level
+- **🛰️ Syslog + CEF Ingestion** — asyncio UDP/TCP listener (RFC 3164 / RFC 5424 / ArcSight CEF) feeding the same pipeline as the demo driver, so real devices stream straight into the dashboard (`SYSLOG_ENABLED=1`)
+- **🌐 Live Threat-Intel Feeds** — AbuseIPDB blacklist + AlienVault OTX pulse sync into the IOC store on a schedule; feed hits raise alert risk scores (`/api/v1/intel/*`)
+- **🔗 Correlation Engine v2** — threshold (N events / entity / window), sequence (recon → exfiltration), and IOC-composite rule types; repeat matches append to the open incident instead of duplicating
+- **📁 Case Management** — incident comments, evidence attachments (alerts / IOCs / notes), actor-attributed timeline, and a full case view in the incident drawer
+- **🔒 Security Hardening** — DB-backed sessions, no default credentials, global auth on every API route (session cookie or `X-API-Key`), role-gated admin surfaces, CORS + security headers, env-driven config
+- **🧪 Engineering** — 117-test pytest suite, Ruff linting, Docker + docker-compose, Makefile, pre-commit hooks, GitHub Actions CI, static-asset dashboard with SRI-pinned CDN dependencies
+
+---
+
 ## ✨ What's New (v3.1)
 
 - **🤖 AI Investigator Chat** — Floating chat panel that answers analyst questions grounded in live SIEM data via Claude (`POST /api/ai/chat`)
@@ -62,7 +74,7 @@ This is not a toy — it reflects how real threat detection pipelines are engine
 ### 🤖 Machine Learning Engine
 - **Isolation Forest anomaly detection** — trained on historical alert feature vectors (severity, MITRE density, base risk score) to flag statistical outliers in real time
 - **FP-feedback-driven retraining** — analysts mark false positives directly in the UI; the retrain endpoint filters FP alert IDs from the training set and adjusts `contamination` dynamically (`fp_rate × 0.5 + 0.005`) before re-fitting the model
-- **DBSCAN clustering** — groups alerts by behavior similarity to surface attack campaigns rather than individual isolated events
+- **Behavior clustering** — groups similar alerts into campaigns/episodes to surface coordinated activity rather than isolated events
 - **Anomaly scoring** — `decision_function` output is normalized to a 0–1 confidence score via sigmoid; exposed per-alert alongside binary anomaly flag
 - **Model persistence** — trained model serialized via `joblib` to `data/iforest_model.pkl`; `data/ml_meta.json` tracks training samples, contamination value, FP count, and last retrain timestamp
 - **7-day threat forecasting** — pure-Python linear regression on 30-day daily alert volumes produces slope, R² confidence, per-day predicted counts, and proportional attack-type breakdown
@@ -228,7 +240,7 @@ The operations dashboard is a single-page application served at `/dashboard` wit
 | **Geo Map** | Leaflet.js world map with alert origin markers, color-coded by risk severity |
 | **Attack Graph** | Cytoscape.js topology — adversary IPs mapped against targeted internal infrastructure |
 | **Automated Playbooks** | Playbook table (trigger → action → status), execution log feed, 7-day trigger chart |
-| **ML Insights** | Anomaly rate trend, feature importance bars, DBSCAN cluster cards, FP feedback history, Retrain button |
+| **ML Insights** | Anomaly rate trend, feature importance bars, alert cluster cards, FP feedback history, Retrain button |
 | **Network Intelligence** | Suspicious /24 subnet table, IP reputation lookup, MITRE ATT&CK coverage matrix |
 | **Threat Forecast** | 30-day historical + 7-day predicted chart, attack breakdown bars, Claude AI narrative |
 | **MITRE Heatmap** | Tactic-grouped technique frequency grid with intensity-shaded cells |
@@ -253,7 +265,7 @@ The operations dashboard is a single-page application served at `/dashboard` wit
 | ORM | SQLAlchemy 2.0 |
 | Database | SQLite (swappable to PostgreSQL) |
 | ASGI Server | Uvicorn |
-| ML Engine | scikit-learn (IsolationForest, DBSCAN) |
+| ML Engine | scikit-learn (IsolationForest) |
 | Model Serialization | joblib |
 | AI Integration | Anthropic Claude API |
 | WebSockets | `websockets` library via Starlette |
@@ -398,33 +410,49 @@ cd smart-siem-risk-engine
 python -m venv venv
 source venv/bin/activate          # Windows: venv\Scripts\activate
 
-pip install -r requirements.txt
+make install-dev                  # or: pip install -r requirements.txt -r requirements-dev.txt
 ```
 
 ### 2 — Configure (Optional)
 ```bash
-cp app/config.py app/config.py.bak
-# Edit app/config.py — add your ANTHROPIC_API_KEY and SLACK_WEBHOOK_URL if desired
+cp .env.example .env
+# Set ADMIN_PASSWORD, ANTHROPIC_API_KEY, ABUSEIPDB_API_KEY, OTX_API_KEY, etc.
 ```
+Everything has a safe default — with no `.env` at all, a random admin
+password is generated and printed once on first boot.
 
 ### 3 — Launch the Platform
 ```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8001
+make dev                          # uvicorn app.main:app --reload --port 8000
 ```
 
-The database (`smart_siem.db`) is created and migrated automatically on first boot.
-
-Navigate to: **http://localhost:8001**
-
-Login credentials: `admin` / `admin`
+The database is created and migrated automatically on first boot.
+Navigate to **http://localhost:8000** and log in as `admin` with your
+`ADMIN_PASSWORD` (or the password printed in the console).
 
 ### 4 — Simulate Attack Traffic
 In a second terminal (with venv activated):
 ```bash
-python run.py
+make demo                         # python run.py
 ```
 
-This runs the synthetic alert generator (`ingestion/sample_generator.py`) — it fires hundreds of realistic security events covering Brute Force, Lateral Movement, Reconnaissance, Exfiltration, C2, and more. Within 60 seconds you will see UEBA profiles building, incidents being created, playbooks firing, and the ML model training on the accumulating history.
+This streams the sample events in `data/samples/` (and any alerts under
+`data/raw_alerts/`) through the full pipeline — within seconds you will see
+UEBA profiles building, Sigma rules matching, incidents being created,
+playbooks firing, and the ML model training on the accumulating history.
+
+### Or: run it in Docker
+```bash
+docker compose up -d              # API on :8000, syslog on 5514/udp + 5515/tcp
+```
+
+### Feed it real logs over syslog
+```bash
+# In .env: SYSLOG_ENABLED=1, then restart. Point any device at udp/5514 or tcp/5515:
+echo '<34>Oct 11 22:14:15 web01 sshd[2412]: Failed password for root from 203.0.113.9 port 22 ssh2' | nc -u -w1 localhost 5514
+```
+RFC 3164, RFC 5424, and ArcSight CEF payloads are parsed, normalized, scored,
+and streamed to the dashboard like any other alert.
 
 ---
 

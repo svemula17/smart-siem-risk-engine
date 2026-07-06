@@ -15,7 +15,7 @@ from app.services.audit_logger import log_action
 from app.services.auth_service import auth_service
 
 router = APIRouter()
-templates = Jinja2Templates(directory=str(Path("app/templates")))
+templates = Jinja2Templates(directory=str(Path(__file__).resolve().parents[1] / "templates"))
 
 
 class UserOut(BaseModel):

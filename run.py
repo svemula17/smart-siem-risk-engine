@@ -3,6 +3,9 @@
 Spawned by the API server in demo mode (or run directly). Broadcasts each
 processed alert to the dashboard via the internal HTTP endpoint.
 """
+import os
+from pathlib import Path
+
 import requests
 
 from app.config import settings
@@ -13,7 +16,20 @@ from app.main import init_db
 from app.reporting.report_generator import generate_evaluation_summary_report
 from app.services.pipeline import process_raw_alert
 
-RAW_ALERTS_DIR = "data/raw_alerts"
+
+def _pick_alerts_dir() -> str:
+    """RAW_ALERTS_DIR env wins; otherwise data/raw_alerts, falling back to the
+    committed demo samples so a fresh clone streams alerts out of the box."""
+    configured = os.getenv("RAW_ALERTS_DIR")
+    if configured:
+        return configured
+    full = Path("data/raw_alerts")
+    if full.is_dir() and any(full.glob("*.json")):
+        return str(full)
+    return "data/samples"
+
+
+RAW_ALERTS_DIR = _pick_alerts_dir()
 
 
 def broadcast_over_http(payload: dict) -> None:

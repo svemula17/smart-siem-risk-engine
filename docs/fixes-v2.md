@@ -1,3 +1,5 @@
+> **Note:** archived feature notes from v2. Default demo credentials were removed in v3.2 — the admin account is created from `ADMIN_PASSWORD` or a random password printed at first boot.
+
 # SmartSIEM Risk Engine - Bug Fixes & Features Added
 
 ## 🐛 Critical Bugs Fixed

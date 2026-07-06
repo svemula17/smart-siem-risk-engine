@@ -26,7 +26,7 @@ from app.services import session_service
 from app.websockets import manager
 
 router = APIRouter()
-templates = Jinja2Templates(directory=str(Path("app/templates")))
+templates = Jinja2Templates(directory=str(Path(__file__).resolve().parents[1] / "templates"))
 
 
 @router.get("/api-docs", response_class=HTMLResponse)

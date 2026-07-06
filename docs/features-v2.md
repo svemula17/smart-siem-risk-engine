@@ -1,3 +1,5 @@
+> **Note:** archived feature notes from v2. Default demo credentials were removed in v3.2 — the admin account is created from `ADMIN_PASSWORD` or a random password printed at first boot.
+
 # Quick Start Guide - New Features
 
 ## 🔐 Updated Authentication
@@ -5,10 +7,10 @@
 ### Default Credentials (Changed)
 ```
 Username: admin
-Password: admin123!  (was: admin)
+Password: <your ADMIN_PASSWORD>  (was: admin)
 
 Username: analyst_1
-Password: analyst123!
+Password: <set via user management>
 
 Username: viewer_1
 Password: viewer123!
@@ -218,7 +220,7 @@ ORDER BY created_at DESC LIMIT 10;
 ### Password Not Working
 Old passwords won't work with new hashing. Initialize mock users:
 ```bash
-curl -X POST http://localhost:8001/api/v1/auth/init
+# (removed in v3.2 — the admin user is created automatically at first boot)
 ```
 
 ### API Key Not Found
@@ -255,7 +257,7 @@ curl -X POST http://localhost:8001/api/v1/auth/init
 
 5. **Reset credentials** if needed:
    ```bash
-   curl -X POST http://localhost:8001/api/v1/auth/init
+   # (removed in v3.2 — the admin user is created automatically at first boot)
    ```
 
 ## 📚 Next Steps
