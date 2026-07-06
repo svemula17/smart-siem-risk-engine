@@ -24,6 +24,7 @@ def db():
     from sqlalchemy.orm import sessionmaker
     from sqlalchemy.pool import StaticPool
 
+    import app.models.db_models  # noqa: F401 — register every table on Base
     from app.database import Base
 
     engine = create_engine(

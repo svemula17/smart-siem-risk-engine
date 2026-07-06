@@ -1,0 +1,15 @@
+title: Tor / Anonymizer Usage
+id: b1c9d2e0-4f6a-4c1e-9a01-smartsiem0011
+status: stable
+description: Connections through Tor exit nodes or anonymizing proxies.
+author: SmartSIEM
+tags:
+  - attack.command_and_control
+  - attack.t1090
+detection:
+  keywords:
+    - 'tor '
+    - 'anonymizer'
+    - 'proxy abuse'
+  condition: keywords
+level: medium

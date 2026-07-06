@@ -1,0 +1,17 @@
+title: Possible Data Exfiltration
+id: b1c9d2e0-4f6a-4c1e-9a01-smartsiem0005
+status: stable
+description: Large or anomalous outbound transfer classified as exfiltration.
+author: SmartSIEM
+tags:
+  - attack.exfiltration
+  - attack.t1041
+detection:
+  selection:
+    attack_type: 'Data Exfiltration'
+  selection_mitre:
+    mitre_ids:
+      - 'T1041'
+      - 'T1048'
+  condition: 1 of selection*
+level: critical

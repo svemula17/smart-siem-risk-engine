@@ -1,0 +1,17 @@
+title: Privilege Escalation Attempt
+id: b1c9d2e0-4f6a-4c1e-9a01-smartsiem0012
+status: stable
+description: Activity mapped to privilege-escalation techniques.
+author: SmartSIEM
+tags:
+  - attack.privilege_escalation
+  - attack.t1068
+detection:
+  selection_attack:
+    attack_type: 'Privilege Escalation'
+  selection_mitre:
+    mitre_ids:
+      - 'T1068'
+      - 'T1548'
+  condition: 1 of selection*
+level: high

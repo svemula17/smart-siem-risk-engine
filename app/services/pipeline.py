@@ -5,7 +5,7 @@ raw alerts through process_raw_alert so scoring, response, correlation, UEBA,
 graph extraction, and dashboard broadcast behave identically everywhere.
 """
 import logging
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from sqlalchemy.orm import Session
 
@@ -69,7 +69,7 @@ def build_broadcast_payload(alert, normalized, scored, is_anomaly: bool) -> dict
 def process_raw_alert(
     db: Session,
     alert: RawAlert,
-    notify: Optional[Callable[[dict], None]] = None,
+    notify: Callable[[dict], None] | None = None,
     generate_report: bool = False,
 ):
     """Run one raw alert through the full detection pipeline.

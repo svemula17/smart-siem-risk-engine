@@ -34,6 +34,7 @@ from app.api.routes_playbooks import router as playbooks_router
 from app.api.routes_reports import router as reports_router
 from app.api.routes_reset import router as reset_router
 from app.api.routes_rules import router as rules_router
+from app.api.routes_sigma import router as sigma_router
 from app.api.routes_suppression import router as suppression_router
 from app.api.routes_ueba import router as ueba_router
 from app.api.routes_webhook import router as webhook_router
@@ -199,5 +200,6 @@ app.include_router(forecast_router,    tags=["Forecast"], dependencies=AUTH)
 app.include_router(playbooks_router,   tags=["Playbooks"], dependencies=AUTH)
 app.include_router(network_router,     tags=["Network"], dependencies=AUTH)
 app.include_router(mitre_router,       tags=["MITRE"], dependencies=AUTH)
+app.include_router(sigma_router,       tags=["Sigma"], dependencies=AUTH)
 app.include_router(pivot_router,       tags=["Pivot"], dependencies=AUTH)
 app.include_router(graph_router,       tags=["Graph"], dependencies=AUTH)

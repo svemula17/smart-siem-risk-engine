@@ -1,0 +1,18 @@
+title: Network Port Scan Detected
+id: b1c9d2e0-4f6a-4c1e-9a01-smartsiem0001
+status: stable
+description: Detects port-scanning reconnaissance activity against internal hosts.
+author: SmartSIEM
+tags:
+  - attack.reconnaissance
+  - attack.t1046
+logsource:
+  product: network
+  service: ids
+detection:
+  selection:
+    message|contains: 'portscan'
+  selection_attack:
+    attack_type: 'Reconnaissance'
+  condition: 1 of selection*
+level: medium

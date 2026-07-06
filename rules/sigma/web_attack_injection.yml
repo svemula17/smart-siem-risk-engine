@@ -1,0 +1,17 @@
+title: Web Application Attack
+id: b1c9d2e0-4f6a-4c1e-9a01-smartsiem0008
+status: stable
+description: SQL injection, XSS, or web brute force against exposed applications.
+author: SmartSIEM
+tags:
+  - attack.initial_access
+  - attack.t1190
+detection:
+  keywords:
+    - 'sql injection'
+    - 'xss'
+    - 'web attack'
+  selection_attack:
+    attack_type: 'Web Attack'
+  condition: keywords or selection_attack
+level: high

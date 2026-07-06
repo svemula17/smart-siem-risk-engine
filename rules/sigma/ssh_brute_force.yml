@@ -1,0 +1,20 @@
+title: SSH Brute Force Attempt
+id: b1c9d2e0-4f6a-4c1e-9a01-smartsiem0002
+status: stable
+description: Repeated failed SSH authentication indicative of password guessing.
+author: SmartSIEM
+tags:
+  - attack.credential_access
+  - attack.t1110
+logsource:
+  product: linux
+  service: sshd
+detection:
+  keywords:
+    - 'failed password'
+    - 'authentication failure'
+    - 'invalid user'
+  selection_attack:
+    attack_type: 'Brute Force'
+  condition: keywords or selection_attack
+level: high

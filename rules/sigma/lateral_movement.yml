@@ -1,0 +1,13 @@
+title: Lateral Movement Between Hosts
+id: b1c9d2e0-4f6a-4c1e-9a01-smartsiem0006
+status: stable
+description: Alert classified as lateral movement inside the network.
+author: SmartSIEM
+tags:
+  - attack.lateral_movement
+  - attack.t1021
+detection:
+  selection:
+    attack_type: 'Lateral Movement'
+  condition: selection
+level: high

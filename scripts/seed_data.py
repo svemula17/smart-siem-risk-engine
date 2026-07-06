@@ -37,7 +37,25 @@ def seed_db():
                 logic_json='{"type": "mitre_tactic", "mitre_id": "T1071", "min_risk": 75}',
                 severity="Medium"
             )
-            db.add_all([rule1, rule2, rule3])
+            rule4 = CorrelationRuleDB(
+                name="Brute Force Burst",
+                description="5+ brute-force alerts from one source IP within 10 minutes.",
+                logic_json='{"type": "threshold", "attack_type": "Brute Force", "group_by": "source_ip", "threshold": 5, "window_minutes": 10}',
+                severity="High"
+            )
+            rule5 = CorrelationRuleDB(
+                name="Recon to Exfiltration",
+                description="Reconnaissance followed by data exfiltration from the same source within an hour.",
+                logic_json='{"type": "sequence", "first": "Reconnaissance", "then": "Data Exfiltration", "group_by": "source_ip", "window_minutes": 60}',
+                severity="Critical"
+            )
+            rule6 = CorrelationRuleDB(
+                name="Known-Bad IP Active",
+                description="Alert from an IOC-listed IP at risk 60 or above.",
+                logic_json='{"type": "ioc_plus", "min_risk": 60}',
+                severity="High"
+            )
+            db.add_all([rule1, rule2, rule3, rule4, rule5, rule6])
             db.commit()
             print("Rules seeded.")
 

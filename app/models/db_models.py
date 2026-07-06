@@ -106,6 +106,11 @@ class IncidentDB(Base):
     # Or we can do a proper association table
     alerts_json = Column(Text, nullable=False, default="[]")
 
+    # Correlation dedupe: rule + entity that opened this incident, so repeat
+    # matches within a window append alerts instead of duplicating incidents.
+    rule_key = Column(String, nullable=True, index=True)
+    entity_key = Column(String, nullable=True, index=True)
+
 
 class IncidentTimelineDB(Base):
     __tablename__ = "incident_timeline"
@@ -113,6 +118,31 @@ class IncidentTimelineDB(Base):
     id = Column(Integer, primary_key=True, index=True)
     incident_id = Column(String, ForeignKey("incidents.id"), index=True, nullable=False)
     event_description = Column(Text, nullable=False)
+    actor = Column(String, nullable=False, default="system")
+    created_at = Column(String, nullable=False)
+
+
+class IncidentCommentDB(Base):
+    """Analyst discussion attached to an incident."""
+    __tablename__ = "incident_comments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    incident_id = Column(String, ForeignKey("incidents.id"), index=True, nullable=False)
+    author = Column(String, nullable=False)
+    body = Column(Text, nullable=False)
+    created_at = Column(String, nullable=False)
+
+
+class IncidentEvidenceDB(Base):
+    """Artifacts pinned to an incident: alerts, IOCs, or free-form notes."""
+    __tablename__ = "incident_evidence"
+
+    id = Column(Integer, primary_key=True, index=True)
+    incident_id = Column(String, ForeignKey("incidents.id"), index=True, nullable=False)
+    evidence_type = Column(String, nullable=False)  # alert | ioc | note
+    ref_id = Column(String, nullable=True)          # alert id / IOC id
+    description = Column(Text, nullable=True)
+    added_by = Column(String, nullable=False)
     created_at = Column(String, nullable=False)
 
 
@@ -324,6 +354,44 @@ class APIKeyDB(Base):
     last_used_at = Column(String, nullable=True)
     created_at = Column(String, nullable=False)
     expires_at = Column(String, nullable=True)
+
+
+class SigmaRuleDB(Base):
+    """Sigma detection rules (YAML), evaluated against every normalized alert."""
+    __tablename__ = "sigma_rules"
+
+    id = Column(Integer, primary_key=True, index=True)
+    rule_uid = Column(String, unique=True, index=True, nullable=False)  # Sigma 'id' or slug
+    title = Column(String, nullable=False)
+    level = Column(String, nullable=False, default="medium")  # low|medium|high|critical
+    tags_json = Column(Text, nullable=True)
+    yaml_text = Column(Text, nullable=False)
+    source = Column(String, nullable=False, default="bundled")  # bundled | upload
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(String, nullable=False)
+
+
+class SigmaMatchDB(Base):
+    """Record of a Sigma rule matching an alert."""
+    __tablename__ = "sigma_matches"
+
+    id = Column(Integer, primary_key=True, index=True)
+    rule_uid = Column(String, index=True, nullable=False)
+    rule_title = Column(String, nullable=False)
+    level = Column(String, nullable=False)
+    raw_alert_id = Column(String, index=True, nullable=False)
+    matched_at = Column(String, nullable=False)
+
+
+class ThreatFeedStateDB(Base):
+    """Sync bookkeeping for external threat-intel feeds."""
+    __tablename__ = "threat_feed_state"
+
+    id = Column(Integer, primary_key=True, index=True)
+    feed = Column(String, unique=True, nullable=False)  # abuseipdb | otx
+    last_sync_at = Column(String, nullable=True)
+    last_status = Column(String, nullable=True)          # ok | error: <msg> | disabled
+    items_synced = Column(Integer, default=0, nullable=False)
 
 
 class GeoIPCacheDB(Base):

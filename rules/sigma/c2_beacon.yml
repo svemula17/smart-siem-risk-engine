@@ -1,0 +1,20 @@
+title: Command and Control Channel
+id: b1c9d2e0-4f6a-4c1e-9a01-smartsiem0004
+status: stable
+description: Traffic consistent with a C2 channel or botnet membership.
+author: SmartSIEM
+tags:
+  - attack.command_and_control
+  - attack.t1071
+detection:
+  selection_attack:
+    attack_type:
+      - 'Command & Control'
+      - 'Botnet Activity'
+  selection_mitre:
+    mitre_ids: 'T1071'
+  keywords:
+    - ' bot'
+    - 'beacon'
+  condition: 1 of selection* or keywords
+level: critical

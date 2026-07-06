@@ -1,0 +1,16 @@
+title: Denial of Service Flood
+id: b1c9d2e0-4f6a-4c1e-9a01-smartsiem0007
+status: stable
+description: Volumetric or protocol flood matching DoS patterns.
+author: SmartSIEM
+tags:
+  - attack.impact
+  - attack.t1498
+detection:
+  keywords:
+    - 'ddos'
+    - 'dos '
+  selection_attack:
+    attack_type: 'Denial of Service'
+  condition: keywords or selection_attack
+level: high

@@ -1,0 +1,13 @@
+title: High-Severity Unclassified Threat
+id: b1c9d2e0-4f6a-4c1e-9a01-smartsiem0010
+status: experimental
+description: Maximum-severity events that evade classification deserve analyst eyes.
+author: SmartSIEM
+tags:
+  - attack.defense_evasion
+detection:
+  selection:
+    severity: 3
+    attack_type: 'Unknown Threat'
+  condition: selection
+level: low

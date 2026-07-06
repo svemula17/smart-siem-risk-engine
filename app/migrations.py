@@ -64,6 +64,17 @@ MIGRATIONS = [
         ALTER TABLE playbook_executions ADD COLUMN webhook_timestamp VARCHAR;
         """,
     },
+    {
+        "version": 5,
+        "name": "case_management_and_correlation",
+        "description": "Incident case-management columns + correlation dedupe keys (new tables come from create_all)",
+        "up": """
+        ALTER TABLE incidents ADD COLUMN rule_key VARCHAR;
+        ALTER TABLE incidents ADD COLUMN entity_key VARCHAR;
+        ALTER TABLE incident_timeline ADD COLUMN actor VARCHAR DEFAULT 'system';
+        CREATE INDEX IF NOT EXISTS idx_incidents_rule_entity ON incidents(rule_key, entity_key);
+        """,
+    },
 ]
 
 
