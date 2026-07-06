@@ -51,7 +51,7 @@ async function bulkCloseIncidents() {
 
 async function openInc(id) {
   curInc = id;
-  const r = await fetch(`/api/v1/incidents/${id}`).catch(() => null);
+  const r = await fetch(`/api/v1/incidents/${id}/case`).catch(() => null);
   if (!r) return;
   const d = await r.json();
   document.getElementById('m-title').textContent = d.incident.title;
@@ -60,7 +60,8 @@ async function openInc(id) {
   const s = document.getElementById('m-sev');
   s.textContent = d.incident.severity;
   s.className = 'badge ' + (d.incident.severity === 'Critical' ? 'b-c' : 'b-h');
-  document.getElementById('m-tl').innerHTML = (d.timeline || []).map(t => `<li style="padding:.35rem 0;border-bottom:1px dashed var(--border)"><span style="color:var(--t3)">[${new Date(t.created_at).toLocaleTimeString()}]</span> ${t.event_description}</li>`).join('') || '<li style="color:var(--t3)">No events.</li>';
+  document.getElementById('m-tl').innerHTML = (d.timeline || []).map(t => `<li style="padding:.35rem 0;border-bottom:1px dashed var(--border)"><span style="color:var(--t3)">[${new Date(t.created_at).toLocaleTimeString()}]</span> <b style="color:var(--t2);font-weight:600">${t.actor || 'system'}</b> — ${t.description || t.event_description || ''}</li>`).join('') || '<li style="color:var(--t3)">No events.</li>';
+  renderCasePanel(d);
   const aiEl = document.getElementById('m-ai');
   aiEl.innerHTML = '<div class="skel"></div><div class="skel" style="width:80%"></div>';
   const sev = d.incident.severity;
@@ -83,6 +84,93 @@ async function aiSumInc(e, id, sev) {
 function downloadIncReport() {
   if (!curInc) return;
   window.open(`/api/v1/incidents/${curInc}/report`, '_blank');
+}
+
+// ══ CASE PANEL (comments + evidence) ══
+function esc(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+
+function renderCasePanel(caseData) {
+  const tl = document.getElementById('m-tl');
+  if (!tl) return;
+  let panel = document.getElementById('case-panel');
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.id = 'case-panel';
+    tl.parentNode.appendChild(panel);
+  }
+  const comments = (caseData.comments || []).map(c =>
+    `<li style="padding:.35rem 0;border-bottom:1px dashed var(--border)">
+       <b style="color:var(--accent)">${esc(c.author)}</b>
+       <span style="color:var(--t3);font-size:.7rem"> ${new Date(c.created_at).toLocaleString()}</span><br>${esc(c.body)}</li>`
+  ).join('') || '<li style="color:var(--t3)">No comments yet.</li>';
+
+  const evidence = (caseData.evidence || []).map(e =>
+    `<li style="padding:.3rem 0;border-bottom:1px dashed var(--border)">
+       <span class="badge b-m" style="font-size:.62rem">${esc(e.evidence_type)}</span>
+       ${e.ref_id ? `<span class="mono" style="font-size:.72rem"> ${esc(e.ref_id)}</span>` : ''}
+       <span style="color:var(--t2)"> ${esc(e.description || '')}</span>
+       <span style="color:var(--t3);font-size:.68rem"> — ${esc(e.added_by)}</span>
+       <button class="btn btn-g" style="font-size:.6rem;padding:1px 5px;float:right" onclick="caseRemoveEvidence(${e.id})">✕</button></li>`
+  ).join('') || '<li style="color:var(--t3)">No evidence attached.</li>';
+
+  panel.innerHTML = `
+    <h4 style="margin:.9rem 0 .4rem;color:var(--t2);font-size:.8rem">💬 Comments</h4>
+    <ul style="list-style:none;max-height:160px;overflow-y:auto">${comments}</ul>
+    <div style="display:flex;gap:.4rem;margin:.5rem 0 1rem">
+      <input id="case-comment-input" placeholder="Add a comment…" style="flex:1;background:var(--hover);border:1px solid var(--border);border-radius:6px;padding:.45rem .6rem;color:var(--t1);font-size:.78rem"
+        onkeydown="if(event.key==='Enter')caseAddComment()">
+      <button class="btn btn-p" style="font-size:.72rem" onclick="caseAddComment()">Post</button>
+    </div>
+    <h4 style="margin:.4rem 0;color:var(--t2);font-size:.8rem">📎 Evidence</h4>
+    <ul style="list-style:none;max-height:140px;overflow-y:auto">${evidence}</ul>
+    <div style="display:flex;gap:.4rem;margin-top:.5rem">
+      <select id="case-ev-type" style="background:var(--hover);border:1px solid var(--border);border-radius:6px;padding:.4rem;color:var(--t1);font-size:.74rem">
+        <option value="note">note</option><option value="alert">alert</option><option value="ioc">ioc</option>
+      </select>
+      <input id="case-ev-ref" placeholder="ref (alert id / IOC)" style="width:34%;background:var(--hover);border:1px solid var(--border);border-radius:6px;padding:.4rem .6rem;color:var(--t1);font-size:.74rem">
+      <input id="case-ev-desc" placeholder="description" style="flex:1;background:var(--hover);border:1px solid var(--border);border-radius:6px;padding:.4rem .6rem;color:var(--t1);font-size:.74rem">
+      <button class="btn btn-g" style="font-size:.72rem" onclick="caseAddEvidence()">Attach</button>
+    </div>`;
+}
+
+async function caseRefresh() {
+  if (!curInc) return;
+  const r = await fetch(`/api/v1/incidents/${curInc}/case`).catch(() => null);
+  if (r) renderCasePanel(await r.json());
+}
+
+async function caseAddComment() {
+  const input = document.getElementById('case-comment-input');
+  if (!input || !input.value.trim() || !curInc) return;
+  const r = await fetch(`/api/v1/incidents/${curInc}/comments`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ body: input.value.trim() })
+  }).catch(() => null);
+  if (!r || !r.ok) return toast('Comment failed', 'error');
+  input.value = '';
+  toast('Comment added', 'success');
+  caseRefresh();
+}
+
+async function caseAddEvidence() {
+  if (!curInc) return;
+  const type = document.getElementById('case-ev-type').value;
+  const ref = document.getElementById('case-ev-ref').value.trim();
+  const desc = document.getElementById('case-ev-desc').value.trim();
+  const r = await fetch(`/api/v1/incidents/${curInc}/evidence`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ evidence_type: type, ref_id: ref || null, description: desc })
+  }).catch(() => null);
+  if (!r || !r.ok) return toast('Evidence attach failed', 'error');
+  toast('Evidence attached', 'success');
+  caseRefresh();
+}
+
+async function caseRemoveEvidence(evidenceId) {
+  if (!curInc) return;
+  const r = await fetch(`/api/v1/incidents/${curInc}/evidence/${evidenceId}`, { method: 'DELETE' }).catch(() => null);
+  if (!r || !r.ok) return toast('Remove failed', 'error');
+  caseRefresh();
 }
 
 // ══ QUICK ACTIONS ══

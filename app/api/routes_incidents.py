@@ -6,8 +6,12 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from app.api.deps import AuthenticatedUser, get_current_user
 from app.database import get_db
+from app.models.db_models import IncidentCommentDB, IncidentDB, IncidentEvidenceDB
+from app.services.audit_logger import log_action
 from app.services.incident_service import (
+    add_timeline_event,
     assign_incident,
     get_incident_details,
     get_recent_incidents,
@@ -78,10 +82,10 @@ class BulkRequest(BaseModel):
 
 
 @router.post("/bulk/close")
-def bulk_close(req: BulkRequest, db: Session = Depends(get_db)):
+def bulk_close(req: BulkRequest, db: Session = Depends(get_db), user=Depends(get_current_user)):
     closed = []
     for iid in req.incident_ids:
-        if update_incident_status(db, iid, "Closed", req.user):
+        if update_incident_status(db, iid, "Closed", user.username):
             closed.append(iid)
     return {"closed": closed, "count": len(closed)}
 
@@ -102,8 +106,8 @@ def get_incident(incident_id: str, db: Session = Depends(get_db)):
     return details
 
 @router.put("/{incident_id}/status")
-def update_status(incident_id: str, status: str, user: str = "System", db: Session = Depends(get_db)):
-    updated = update_incident_status(db, incident_id, status, user)
+def update_status(incident_id: str, status: str, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    updated = update_incident_status(db, incident_id, status, user.username)
     if not updated:
         raise HTTPException(status_code=404, detail="Incident not found")
     return updated
@@ -151,3 +155,150 @@ def assign(incident_id: str, user_id: int, user_name: str, db: Session = Depends
     if not updated:
         raise HTTPException(status_code=404, detail="Incident not found")
     return updated
+
+
+# ── Case management: comments, evidence, authenticated actions ─────────────────
+
+class CommentCreate(BaseModel):
+    body: str
+
+
+class EvidenceCreate(BaseModel):
+    evidence_type: str = "note"   # alert | ioc | note
+    ref_id: str | None = None
+    description: str = ""
+
+
+def _require_incident(db: Session, incident_id: str) -> IncidentDB:
+    incident = db.query(IncidentDB).filter(IncidentDB.id == incident_id).first()
+    if not incident:
+        raise HTTPException(status_code=404, detail="Incident not found")
+    return incident
+
+
+@router.get("/{incident_id}/comments")
+def list_comments(incident_id: str, db: Session = Depends(get_db)):
+    _require_incident(db, incident_id)
+    rows = (
+        db.query(IncidentCommentDB)
+        .filter(IncidentCommentDB.incident_id == incident_id)
+        .order_by(IncidentCommentDB.id)
+        .all()
+    )
+    return {"comments": [
+        {"id": c.id, "author": c.author, "body": c.body, "created_at": c.created_at}
+        for c in rows
+    ]}
+
+
+@router.post("/{incident_id}/comments")
+def add_comment(
+    incident_id: str,
+    req: CommentCreate,
+    db: Session = Depends(get_db),
+    user: AuthenticatedUser = Depends(get_current_user),
+):
+    if not req.body.strip():
+        raise HTTPException(status_code=422, detail="Comment body is empty")
+    _require_incident(db, incident_id)
+    comment = IncidentCommentDB(
+        incident_id=incident_id,
+        author=user.username,
+        body=req.body.strip(),
+        created_at=datetime.utcnow().isoformat(),
+    )
+    db.add(comment)
+    db.commit()
+    add_timeline_event(db, incident_id, "Comment added.", actor=user.username)
+    return {"status": "created", "id": comment.id}
+
+
+@router.get("/{incident_id}/evidence")
+def list_evidence(incident_id: str, db: Session = Depends(get_db)):
+    _require_incident(db, incident_id)
+    rows = (
+        db.query(IncidentEvidenceDB)
+        .filter(IncidentEvidenceDB.incident_id == incident_id)
+        .order_by(IncidentEvidenceDB.id)
+        .all()
+    )
+    return {"evidence": [
+        {"id": e.id, "evidence_type": e.evidence_type, "ref_id": e.ref_id,
+         "description": e.description, "added_by": e.added_by, "created_at": e.created_at}
+        for e in rows
+    ]}
+
+
+@router.post("/{incident_id}/evidence")
+def add_evidence(
+    incident_id: str,
+    req: EvidenceCreate,
+    db: Session = Depends(get_db),
+    user: AuthenticatedUser = Depends(get_current_user),
+):
+    if req.evidence_type not in ("alert", "ioc", "note"):
+        raise HTTPException(status_code=422, detail="evidence_type must be alert, ioc, or note")
+    _require_incident(db, incident_id)
+    evidence = IncidentEvidenceDB(
+        incident_id=incident_id,
+        evidence_type=req.evidence_type,
+        ref_id=req.ref_id,
+        description=req.description,
+        added_by=user.username,
+        created_at=datetime.utcnow().isoformat(),
+    )
+    db.add(evidence)
+    db.commit()
+    add_timeline_event(
+        db, incident_id,
+        f"Evidence attached ({req.evidence_type}{': ' + req.ref_id if req.ref_id else ''}).",
+        actor=user.username,
+    )
+    log_action(db, actor=user.username, action="add_evidence", target=incident_id,
+               detail=f"{req.evidence_type}:{req.ref_id or '-'}")
+    return {"status": "created", "id": evidence.id}
+
+
+@router.delete("/{incident_id}/evidence/{evidence_id}")
+def remove_evidence(
+    incident_id: str,
+    evidence_id: int,
+    db: Session = Depends(get_db),
+    user: AuthenticatedUser = Depends(get_current_user),
+):
+    row = (
+        db.query(IncidentEvidenceDB)
+        .filter(IncidentEvidenceDB.id == evidence_id, IncidentEvidenceDB.incident_id == incident_id)
+        .first()
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="Evidence not found")
+    db.delete(row)
+    db.commit()
+    add_timeline_event(db, incident_id, "Evidence removed.", actor=user.username)
+    return {"status": "deleted"}
+
+
+@router.get("/{incident_id}/case")
+def case_detail(incident_id: str, db: Session = Depends(get_db)):
+    """Full case view: incident, SLA, timeline (with actors), comments, evidence."""
+    incident = _require_incident(db, incident_id)
+    details = get_incident_details(db, incident_id)
+    comments = list_comments(incident_id, db)["comments"]
+    evidence = list_evidence(incident_id, db)["evidence"]
+    return {
+        "incident": {
+            "id": incident.id, "title": incident.title, "description": incident.description,
+            "status": incident.status, "severity": incident.severity,
+            "assignee_id": incident.assignee_id, "created_at": incident.created_at,
+            "updated_at": incident.updated_at, "alerts_json": incident.alerts_json,
+        },
+        "sla": _compute_sla(incident),
+        "timeline": [
+            {"description": t.event_description, "actor": getattr(t, "actor", "system"),
+             "created_at": t.created_at}
+            for t in details["timeline"]
+        ],
+        "comments": comments,
+        "evidence": evidence,
+    }

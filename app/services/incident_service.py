@@ -38,10 +38,11 @@ def create_incident(
 
     return incident
 
-def add_timeline_event(db: Session, incident_id: str, description: str) -> None:
+def add_timeline_event(db: Session, incident_id: str, description: str, actor: str = "system") -> None:
     event = IncidentTimelineDB(
         incident_id=incident_id,
         event_description=description,
+        actor=actor,
         created_at=datetime.utcnow().isoformat()
     )
     db.add(event)
